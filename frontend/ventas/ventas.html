@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXTREP - Ventas</title>
+
+    <link rel="stylesheet" href="ventas.css">
+</head>
+
+<body>
+
+    <h1>NEXTREP</h1>
+    <h2>Registro de Ventas</h2>
+
+    <!-- Formulario para registrar una venta -->
+    <div class="formulario">
+
+        <label>Producto:</label>
+        <input type="text" id="producto" placeholder="Nombre del producto">
+
+        <label>Cantidad:</label>
+        <input type="number" id="cantidad" placeholder="Cantidad">
+
+        <label>Precio:</label>
+        <input type="number" id="precio" placeholder="Precio">
+
+        <button onclick="registrarVenta()">Registrar Venta</button>
+
+    </div>
+
+    <hr>
+
+    <!-- Lista de ventas -->
+    <h2>Lista de Ventas</h2>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+
+        <tbody id="listaVentas">
+        </tbody>
+
+    </table>
+
+    <script src="ventas.js"></script>
+
+</body>
+</html>
