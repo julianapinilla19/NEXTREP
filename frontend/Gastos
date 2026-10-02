@@ -1,0 +1,143 @@
+html.
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXTREP - Gastos</title>
+    <link rel="stylesheet" href="gastos.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>NEXTREP</h1>
+        <p>Gestión de gastos y costos</p>
+    </header>
+
+    <main class="contenedor">
+
+        <!-- Registrar gasto -->
+        <section class="card">
+            <h2>Registrar Gasto</h2>
+
+            <form id="formGasto">
+
+                <label for="descripcionGasto">
+                    Descripción
+                </label>
+
+                <input 
+                    type="text"
+                    id="descripcionGasto"
+                    placeholder="Ej: Pago de servicios"
+                    required
+                >
+
+                <label for="categoriaGasto">
+                    Categoría
+                </label>
+
+                <select id="categoriaGasto" required>
+                    <option value="">Seleccionar categoría</option>
+                    <option value="Servicios">Servicios</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Mantenimiento">Mantenimiento</option>
+                    <option value="Publicidad">Publicidad</option>
+                    <option value="Otros">Otros</option>
+                </select>
+
+                <label for="valorGasto">
+                    Valor
+                </label>
+
+                <input 
+                    type="number"
+                    id="valorGasto"
+                    placeholder="Ej: 50000"
+                    min="0"
+                    required
+                >
+
+                <label for="fechaGasto">
+                    Fecha
+                </label>
+
+                <input 
+                    type="date"
+                    id="fechaGasto"
+                    required
+                >
+
+                <button type="submit">
+                    Registrar Gasto
+                </button>
+
+            </form>
+        </section>
+
+
+        <!-- Registrar costo -->
+        <section class="card">
+            <h2>Registrar Costo</h2>
+
+            <form id="formCosto">
+
+                <label for="descripcionCosto">
+                    Descripción
+                </label>
+
+                <input 
+                    type="text"
+                    id="descripcionCosto"
+                    placeholder="Ej: Compra de productos"
+                    required
+                >
+
+                <label for="tipoCosto">
+                    Tipo de costo
+                </label>
+
+                <select id="tipoCosto" required>
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Producto">Producto</option>
+                    <option value="Material">Material</option>
+                    <option value="Operación">Operación</option>
+                    <option value="Otro">Otro</option>
+                </select>
+
+                <label for="valorCosto">
+                    Valor
+                </label>
+
+                <input 
+                    type="number"
+                    id="valorCosto"
+                    placeholder="Ej: 100000"
+                    min="0"
+                    required
+                >
+
+                <label for="fechaCosto">
+                    Fecha
+                </label>
+
+                <input 
+                    type="date"
+                    id="fechaCosto"
+                    required
+                >
+
+                <button type="submit">
+                    Registrar Costo
+                </button>
+
+            </form>
+        </section>
+
+    </main>
+
+    <script src="gastos.js"></script>
+
+</body>
+</html>
