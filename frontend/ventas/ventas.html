@@ -34,21 +34,24 @@
     <!-- Lista de ventas -->
     <h2>Lista de Ventas</h2>
 
-    <table>
+   <table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio unitario</th>
+            <th>Total</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
 
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-
-        <tbody id="listaVentas">
-        </tbody>
-
-    </table>
+    <tbody id="listaVentas">
+        <tr>
+            <td colspan="6">Cargando ventas...</td>
+        </tr>
+    </tbody>
+</table>
 
     <script src="ventas.js"></script>
 
