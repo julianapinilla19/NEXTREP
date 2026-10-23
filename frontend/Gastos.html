@@ -10,7 +10,7 @@
 <body>
     <header>
         <h1>NEXTREP</h1>
-        <p>Gestión de gastos y costos</p>
+        <p>Gestión financiera de tu negocio</p>
     </header>
 
     <main class="contenedor">
@@ -19,8 +19,7 @@
 
             <form id="formGasto">
                 <label for="descripcionGasto">Descripción</label>
-                <input id="descripcionGasto" type="text"
-                       placeholder="Ej: Pago de servicios" required>
+                <input id="descripcionGasto" required maxlength="150">
 
                 <label for="categoriaGasto">Categoría</label>
                 <select id="categoriaGasto" required>
@@ -29,6 +28,7 @@
                     <option>Personal</option>
                     <option>Mantenimiento</option>
                     <option>Publicidad</option>
+                    <option>Arriendo</option>
                     <option>Otros</option>
                 </select>
 
@@ -39,30 +39,10 @@
                 <label for="fechaGasto">Fecha</label>
                 <input id="fechaGasto" type="date" required>
 
-                <button id="btnGasto" type="submit">
-                    Registrar gasto
-                </button>
+                <button id="btnGasto" type="submit">Registrar gasto</button>
                 <button id="cancelarGasto" type="button"
-                        class="secundario oculto">
-                    Cancelar edición
-                </button>
+                        class="secundario oculto">Cancelar edición</button>
             </form>
-
-            <h3>Lista de gastos</h3>
-            <div class="tabla-contenedor">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Descripción</th>
-                            <th>Categoría</th>
-                            <th>Valor</th>
-                            <th>Fecha</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listaGastos"></tbody>
-                </table>
-            </div>
         </section>
 
         <section class="card">
@@ -70,8 +50,7 @@
 
             <form id="formCosto">
                 <label for="descripcionCosto">Descripción</label>
-                <input id="descripcionCosto" type="text"
-                       placeholder="Ej: Compra de materiales" required>
+                <input id="descripcionCosto" required maxlength="150">
 
                 <label for="tipoCosto">Tipo de costo</label>
                 <select id="tipoCosto" required>
@@ -89,16 +68,84 @@
                 <label for="fechaCosto">Fecha</label>
                 <input id="fechaCosto" type="date" required>
 
-                <button id="btnCosto" type="submit">
-                    Registrar costo
-                </button>
+                <button id="btnCosto" type="submit">Registrar costo</button>
                 <button id="cancelarCosto" type="button"
-                        class="secundario oculto">
-                    Cancelar edición
-                </button>
+                        class="secundario oculto">Cancelar edición</button>
             </form>
+        </section>
 
-            <h3>Lista de costos</h3>
+        <section class="card ancho-completo">
+            <h2>Historial de gastos</h2>
+            <p>Consulta los gastos registrados y filtra por fechas.</p>
+
+            <div class="filtros">
+                <div>
+                    <label for="fechaInicio">Desde</label>
+                    <input type="date" id="fechaInicio">
+                </div>
+                <div>
+                    <label for="fechaFin">Hasta</label>
+                    <input type="date" id="fechaFin">
+                </div>
+                <button type="button" id="btnFiltrar">Filtrar</button>
+                <button type="button" id="btnLimpiar"
+                        class="secundario">Limpiar filtros</button>
+            </div>
+
+            <p id="mensajeHistorial" aria-live="polite"></p>
+
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Valor</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaGastos"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card ancho-completo">
+            <h2>Reporte de gastos</h2>
+            <p>El reporte utiliza el mismo período seleccionado en los filtros.</p>
+
+            <div class="resumen">
+                <div class="indicador">
+                    <span>Total gastado</span>
+                    <strong id="totalGastos">$0</strong>
+                </div>
+                <div class="indicador">
+                    <span>Cantidad de gastos</span>
+                    <strong id="cantidadGastos">0</strong>
+                </div>
+                <div class="indicador">
+                    <span>Promedio por gasto</span>
+                    <strong id="promedioGastos">$0</strong>
+                </div>
+            </div>
+
+            <h3>Gastos por categoría</h3>
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Cantidad</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reporteCategorias"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card ancho-completo">
+            <h2>Historial de costos</h2>
             <div class="tabla-contenedor">
                 <table>
                     <thead>
