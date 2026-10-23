@@ -15,6 +15,7 @@ def conectar():
     return sqlite3.connect(BASE_DATOS)
 
 
+
 def crear_tabla():
     BASE_DATOS.parent.mkdir(parents=True, exist_ok=True)
 
@@ -25,9 +26,20 @@ def crear_tabla():
                 producto TEXT NOT NULL,
                 cantidad INTEGER NOT NULL,
                 precio REAL NOT NULL,
-                total REAL NOT NULL
+                total REAL NOT NULL,
+                fecha TEXT
             )
         """)
+
+        # Revisar las columnas de la tabla existente
+        columnas = [
+            columna[1]
+            for columna in db.execute("PRAGMA table_info(ventas)").fetchall()
+        ]
+
+        # Agregar fecha si la tabla ya existía sin esa columna
+        if "fecha" not in columnas:
+            db.execute("ALTER TABLE ventas ADD COLUMN fecha TEXT")
 
 
 @app.route("/")
@@ -44,15 +56,54 @@ def archivos_frontend(archivo):
 
 
 # Consultar todas las ventas
-@app.route("/api/ventas", methods=["GET"])
-def listar_ventas():
+
+# Consultar historial de ventas y filtrar por fecha
+@app.route("/api/ventas/historial", methods=["GET"])
+def historial_ventas():
+    fecha_inicio = request.args.get("desde")
+    fecha_fin = request.args.get("hasta")
+
+    consulta = "SELECT * FROM ventas WHERE 1=1"
+    parametros = []
+
+    if fecha_inicio:
+        consulta += " AND fecha >= ?"
+        parametros.append(fecha_inicio)
+
+    if fecha_fin:
+        consulta += " AND fecha <= ?"
+        parametros.append(fecha_fin)
+
+    consulta += " ORDER BY fecha DESC, id DESC"
+
     with conectar() as db:
         db.row_factory = sqlite3.Row
-        filas = db.execute(
-            "SELECT * FROM ventas ORDER BY id DESC"
-        ).fetchall()
+        filas = db.execute(consulta, parametros).fetchall()
 
     return jsonify([dict(fila) for fila in filas])
+
+
+# Consultar el total de ventas
+@app.route("/api/ventas/total", methods=["GET"])
+def total_ventas():
+    fecha_inicio = request.args.get("desde")
+    fecha_fin = request.args.get("hasta")
+
+    consulta = "SELECT COALESCE(SUM(total), 0) AS total FROM ventas WHERE 1=1"
+    parametros = []
+
+    if fecha_inicio:
+        consulta += " AND fecha >= ?"
+        parametros.append(fecha_inicio)
+
+    if fecha_fin:
+        consulta += " AND fecha <= ?"
+        parametros.append(fecha_fin)
+
+    with conectar() as db:
+        resultado = db.execute(consulta, parametros).fetchone()
+
+    return jsonify({"total_ventas": resultado[0]})
 
 
 # Registrar una venta
@@ -75,10 +126,11 @@ def registrar_venta():
 
     total = cantidad * precio
 
+    
     with conectar() as db:
         cursor = db.execute(
-            """INSERT INTO ventas (producto, cantidad, precio, total)
-               VALUES (?, ?, ?, ?)""",
+            """INSERT INTO ventas (producto, cantidad, precio, total, fecha)
+               VALUES (?, ?, ?, ?, date('now', 'localtime'))""",
             (producto, cantidad, precio, total)
         )
         venta_id = cursor.lastrowid
