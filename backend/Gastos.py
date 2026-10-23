@@ -1,12 +1,12 @@
 
 from pathlib import Path
+from datetime import date
 import sqlite3
 
 from flask import Flask, jsonify, request, send_from_directory
 
 app = Flask(__name__)
 
-# Raíz del repositorio NEXTREP
 RAIZ = Path(__file__).resolve().parents[2]
 FRONTEND = RAIZ / "frontend" / "gastos"
 BASE_DATOS = RAIZ / "database" / "nextrep_gastos.db"
@@ -15,9 +15,9 @@ BASE_DATOS.parent.mkdir(parents=True, exist_ok=True)
 
 
 def conectar():
-    conexion = sqlite3.connect(BASE_DATOS)
-    conexion.row_factory = sqlite3.Row
-    return conexion
+    db = sqlite3.connect(BASE_DATOS)
+    db.row_factory = sqlite3.Row
+    return db
 
 
 def inicializar_bd():
@@ -56,8 +56,8 @@ def archivos_frontend(archivo):
     return send_from_directory(FRONTEND, archivo)
 
 
-def validar(datos, tipo):
-    campo_tipo = "categoria" if tipo == "gastos" else "tipo"
+def validar(datos, recurso):
+    campo_tipo = "categoria" if recurso == "gastos" else "tipo"
 
     descripcion = datos.get("descripcion")
     clasificacion = datos.get(campo_tipo)
@@ -66,49 +66,55 @@ def validar(datos, tipo):
     try:
         valor = float(datos.get("valor"))
     except (TypeError, ValueError):
-        valor = 0
+        return None, "El valor debe ser numérico."
 
-    if not all([descripcion, clasificacion, fecha]):
-        return None, "Todos los campos son obligatorios."
+    if not isinstance(descripcion, str) or not descripcion.strip():
+        return None, "La descripción es obligatoria."
 
-    if valor <= 0:
-        return None, "El valor debe ser mayor que cero."
+    if not isinstance(clasificacion, str) or not clasificacion.strip():
+        return None, "La categoría o tipo es obligatorio."
 
-    campos = {
-        "descripcion": str(descripcion).strip(),
-        campo_tipo: str(clasificacion).strip(),
+    if not isinstance(fecha, str):
+        return None, "La fecha es obligatoria."
+
+    try:
+        fecha_obj = date.fromisoformat(fecha)
+        if fecha_obj.isoformat() != fecha:
+            raise ValueError
+    except ValueError:
+        return None, "La fecha debe tener formato AAAA-MM-DD."
+
+    if not 0 < valor < float("inf"):
+        return None, "El valor debe ser mayor que cero y finito."
+
+    return {
+        "descripcion": descripcion.strip(),
+        campo_tipo: clasificacion.strip(),
         "valor": valor,
-        "fecha": str(fecha)
-    }
-
-    if not campos["descripcion"] or not campos[campo_tipo]:
-        return None, "La descripción y el tipo son obligatorios."
-
-    return campos, None
+        "fecha": fecha
+    }, None
 
 
-def crear_rutas(tipo):
-    campo_tipo = "categoria" if tipo == "gastos" else "tipo"
+def registrar_rutas(recurso):
+    campo_tipo = "categoria" if recurso == "gastos" else "tipo"
 
-    @app.route(f"/api/{tipo}", methods=["GET"])
     def listar():
         with conectar() as db:
             filas = db.execute(
-                f"SELECT * FROM {tipo} ORDER BY fecha DESC, id DESC"
+                f"SELECT * FROM {recurso} ORDER BY fecha DESC, id DESC"
             ).fetchall()
 
         return jsonify([dict(fila) for fila in filas])
 
-    @app.route(f"/api/{tipo}", methods=["POST"])
     def crear():
-        datos, error = validar(request.get_json(silent=True) or {}, tipo)
+        datos, error = validar(request.get_json(silent=True) or {}, recurso)
 
         if error:
             return jsonify({"error": error}), 400
 
         with conectar() as db:
             cursor = db.execute(
-                f"""INSERT INTO {tipo}
+                f"""INSERT INTO {recurso}
                     (descripcion, {campo_tipo}, valor, fecha)
                     VALUES (?, ?, ?, ?)""",
                 (
@@ -125,16 +131,15 @@ def crear_rutas(tipo):
             "id": nuevo_id
         }), 201
 
-    @app.route(f"/api/{tipo}/<int:registro_id>", methods=["PUT"])
     def actualizar(registro_id):
-        datos, error = validar(request.get_json(silent=True) or {}, tipo)
+        datos, error = validar(request.get_json(silent=True) or {}, recurso)
 
         if error:
             return jsonify({"error": error}), 400
 
         with conectar() as db:
             cursor = db.execute(
-                f"""UPDATE {tipo}
+                f"""UPDATE {recurso}
                     SET descripcion = ?, {campo_tipo} = ?,
                         valor = ?, fecha = ?
                     WHERE id = ?""",
@@ -152,11 +157,10 @@ def crear_rutas(tipo):
 
         return jsonify({"mensaje": "Registro actualizado correctamente."})
 
-    @app.route(f"/api/{tipo}/<int:registro_id>", methods=["DELETE"])
     def eliminar(registro_id):
         with conectar() as db:
             cursor = db.execute(
-                f"DELETE FROM {tipo} WHERE id = ?",
+                f"DELETE FROM {recurso} WHERE id = ?",
                 (registro_id,)
             )
 
@@ -165,9 +169,30 @@ def crear_rutas(tipo):
 
         return jsonify({"mensaje": "Registro eliminado correctamente."})
 
+    # Endpoints con nombres únicos para cada recurso.
+    app.add_url_rule(
+        f"/api/{recurso}", endpoint=f"{recurso}_listar",
+        view_func=listar, methods=["GET"]
+    )
+    app.add_url_rule(
+        f"/api/{recurso}", endpoint=f"{recurso}_crear",
+        view_func=crear, methods=["POST"]
+    )
+    app.add_url_rule(
+        f"/api/{recurso}/<int:registro_id>",
+        endpoint=f"{recurso}_actualizar",
+        view_func=actualizar, methods=["PUT"]
+    )
+    app.add_url_rule(
+        f"/api/{recurso}/<int:registro_id>",
+        endpoint=f"{recurso}_eliminar",
+        view_func=eliminar, methods=["DELETE"]
+    )
 
-crear_rutas("gastos")
-crear_rutas("costos")
+
+registrar_rutas("gastos")
+registrar_rutas("costos")
+
 
 if __name__ == "__main__":
     inicializar_bd()
