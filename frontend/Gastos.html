@@ -4,165 +4,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXTREP - Gastos y Costos</title>
-    <link rel="stylesheet" href="/gastos.css">
+    <title>NEXTREP | Gastos y Costos</title>
+    <link rel="stylesheet" href="gastos.css">
 </head>
+
 <body>
-    <header>
-        <h1>NEXTREP</h1>
-        <p>Gestión financiera de tu negocio</p>
+    <header class="encabezado">
+        <div class="contenedor">
+            <h1>NEXTREP</h1>
+            <p>Gestión de gastos y costos</p>
+        </div>
     </header>
 
     <main class="contenedor">
-        <section class="card">
+
+        <section class="panel">
             <h2>Registrar gasto</h2>
 
             <form id="formGasto">
-                <label for="descripcionGasto">Descripción</label>
-                <input id="descripcionGasto" required maxlength="150">
+                <input type="hidden" id="gastoId">
 
-                <label for="categoriaGasto">Categoría</label>
-                <select id="categoriaGasto" required>
-                    <option value="">Seleccionar categoría</option>
-                    <option>Servicios</option>
-                    <option>Personal</option>
-                    <option>Mantenimiento</option>
-                    <option>Publicidad</option>
-                    <option>Arriendo</option>
-                    <option>Otros</option>
-                </select>
+                <div class="grupo">
+                    <label for="descripcionGasto">Descripción</label>
+                    <input
+                        type="text"
+                        id="descripcionGasto"
+                        placeholder="Ej. Compra de materiales"
+                        required
+                    >
+                </div>
 
-                <label for="valorGasto">Valor (COP)</label>
-                <input id="valorGasto" type="number"
-                       min="0.01" step="0.01" required>
+                <div class="grupo">
+                    <label for="categoriaGasto">Categoría</label>
+                    <select id="categoriaGasto" required>
+                        <option value="">Selecciona una categoría</option>
+                        <option value="Operativo">Operativo</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Servicios">Servicios</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
 
-                <label for="fechaGasto">Fecha</label>
-                <input id="fechaGasto" type="date" required>
+                <div class="grupo">
+                    <label for="montoGasto">Monto (COP)</label>
+                    <input
+                        type="number"
+                        id="montoGasto"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="Ej. 50000"
+                        required
+                    >
+                </div>
 
-                <button id="btnGasto" type="submit">Registrar gasto</button>
-                <button id="cancelarGasto" type="button"
-                        class="secundario oculto">Cancelar edición</button>
+                <div class="grupo">
+                    <label for="fechaGasto">Fecha</label>
+                    <input type="date" id="fechaGasto" required>
+                </div>
+
+                <div class="grupo">
+                    <label for="observacionGasto">Observaciones</label>
+                    <textarea
+                        id="observacionGasto"
+                        rows="3"
+                        placeholder="Detalles adicionales (opcional)"
+                    ></textarea>
+                </div>
+
+                <div class="acciones">
+                    <button type="submit" id="btnGuardarGasto">
+                        Guardar gasto
+                    </button>
+
+                    <button
+                        type="button"
+                        class="secundario oculto"
+                        id="btnCancelarGasto"
+                    >
+                        Cancelar edición
+                    </button>
+                </div>
             </form>
         </section>
 
-        <section class="card">
+        <section class="panel">
             <h2>Registrar costo</h2>
 
             <form id="formCosto">
-                <label for="descripcionCosto">Descripción</label>
-                <input id="descripcionCosto" required maxlength="150">
+                <input type="hidden" id="costoId">
 
-                <label for="tipoCosto">Tipo de costo</label>
-                <select id="tipoCosto" required>
-                    <option value="">Seleccionar tipo</option>
-                    <option>Producto</option>
-                    <option>Material</option>
-                    <option>Operación</option>
-                    <option>Otro</option>
-                </select>
+                <div class="grupo">
+                    <label for="descripcionCosto">Descripción</label>
+                    <input
+                        type="text"
+                        id="descripcionCosto"
+                        placeholder="Ej. Materia prima"
+                        required
+                    >
+                </div>
 
-                <label for="valorCosto">Valor (COP)</label>
-                <input id="valorCosto" type="number"
-                       min="0.01" step="0.01" required>
+                <div class="grupo">
+                    <label for="categoriaCosto">Categoría</label>
+                    <select id="categoriaCosto" required>
+                        <option value="">Selecciona una categoría</option>
+                        <option value="Materia prima">Materia prima</option>
+                        <option value="Producción">Producción</option>
+                        <option value="Mano de obra">Mano de obra</option>
+                        <option value="Distribución">Distribución</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
 
-                <label for="fechaCosto">Fecha</label>
-                <input id="fechaCosto" type="date" required>
+                <div class="grupo">
+                    <label for="montoCosto">Monto (COP)</label>
+                    <input
+                        type="number"
+                        id="montoCosto"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="Ej. 100000"
+                        required
+                    >
+                </div>
 
-                <button id="btnCosto" type="submit">Registrar costo</button>
-                <button id="cancelarCosto" type="button"
-                        class="secundario oculto">Cancelar edición</button>
+                <div class="grupo">
+                    <label for="fechaCosto">Fecha</label>
+                    <input type="date" id="fechaCosto" required>
+                </div>
+
+                <div class="grupo">
+                    <label for="observacionCosto">Observaciones</label>
+                    <textarea
+                        id="observacionCosto"
+                        rows="3"
+                        placeholder="Detalles adicionales (opcional)"
+                    ></textarea>
+                </div>
+
+                <div class="acciones">
+                    <button type="submit" id="btnGuardarCosto">
+                        Guardar costo
+                    </button>
+
+                    <button
+                        type="button"
+                        class="secundario oculto"
+                        id="btnCancelarCosto"
+                    >
+                        Cancelar edición
+                    </button>
+                </div>
             </form>
         </section>
 
-        <section class="card ancho-completo">
+        <section class="panel">
             <h2>Historial de gastos</h2>
-            <p>Consulta los gastos registrados y filtra por fechas.</p>
 
             <div class="filtros">
-                <div>
-                    <label for="fechaInicio">Desde</label>
-                    <input type="date" id="fechaInicio">
+                <div class="grupo">
+                    <label for="filtroFechaInicio">Desde</label>
+                    <input type="date" id="filtroFechaInicio">
                 </div>
-                <div>
-                    <label for="fechaFin">Hasta</label>
-                    <input type="date" id="fechaFin">
-                </div>
-                <button type="button" id="btnFiltrar">Filtrar</button>
-                <button type="button" id="btnLimpiar"
-                        class="secundario">Limpiar filtros</button>
-            </div>
 
-            <p id="mensajeHistorial" aria-live="polite"></p>
+                <div class="grupo">
+                    <label for="filtroFechaFin">Hasta</label>
+                    <input type="date" id="filtroFechaFin">
+                </div>
+
+                <div class="grupo">
+                    <label for="filtroCategoria">Categoría</label>
+                    <select id="filtroCategoria">
+                        <option value="">Todas las categorías</option>
+                        <option value="Operativo">Operativo</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Servicios">Servicios</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+
+                <button type="button" id="btnFiltrar">
+                    Filtrar
+                </button>
+
+                <button type="button" class="secundario" id="btnLimpiarFiltros">
+                    Limpiar filtros
+                </button>
+            </div>
 
             <div class="tabla-contenedor">
                 <table>
                     <thead>
                         <tr>
+                            <th>Fecha</th>
                             <th>Descripción</th>
                             <th>Categoría</th>
-                            <th>Valor</th>
-                            <th>Fecha</th>
+                            <th>Monto</th>
+                            <th>Observaciones</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="listaGastos"></tbody>
+
+                    <tbody id="listaGastos">
+                        <tr>
+                            <td colspan="6">Cargando gastos...</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </section>
 
-        <section class="card ancho-completo">
-            <h2>Reporte de gastos</h2>
-            <p>El reporte utiliza el mismo período seleccionado en los filtros.</p>
+        <section class="panel">
+            <h2>Historial de costos</h2>
 
-            <div class="resumen">
-                <div class="indicador">
-                    <span>Total gastado</span>
-                    <strong id="totalGastos">$0</strong>
-                </div>
-                <div class="indicador">
-                    <span>Cantidad de gastos</span>
-                    <strong id="cantidadGastos">0</strong>
-                </div>
-                <div class="indicador">
-                    <span>Promedio por gasto</span>
-                    <strong id="promedioGastos">$0</strong>
-                </div>
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                            <th>Observaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="listaCostos">
+                        <tr>
+                            <td colspan="6">Cargando costos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Reporte de gastos</h2>
+
+            <div class="tarjetas-estadisticas">
+                <article class="tarjeta-estadistica">
+                    <h3>Total de gastos filtrados</h3>
+                    <p id="totalGastos">$0</p>
+                </article>
+
+                <article class="tarjeta-estadistica">
+                    <h3>Cantidad de gastos</h3>
+                    <p id="cantidadGastos">0</p>
+                </article>
+
+                <article class="tarjeta-estadistica">
+                    <h3>Promedio por gasto</h3>
+                    <p id="promedioGastos">$0</p>
+                </article>
+            </div>
+
+            <h3>Resumen por categoría</h3>
+
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Total gastado</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tablaReporteCategorias">
+                        <tr>
+                            <td colspan="2">Sin datos disponibles</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Estadísticas de gastos y costos</h2>
+
+            <div class="tarjetas-estadisticas">
+                <article class="tarjeta-estadistica">
+                    <h3>Total de gastos</h3>
+                    <p id="estadisticaTotalGastos">$0</p>
+                    <small id="estadisticaCantidadGastos">0 registros</small>
+                </article>
+
+                <article class="tarjeta-estadistica">
+                    <h3>Promedio por gasto</h3>
+                    <p id="estadisticaPromedioGastos">$0</p>
+                </article>
+
+                <article class="tarjeta-estadistica">
+                    <h3>Total de costos</h3>
+                    <p id="estadisticaTotalCostos">$0</p>
+                    <small id="estadisticaCantidadCostos">0 registros</small>
+                </article>
+
+                <article class="tarjeta-estadistica">
+                    <h3>Promedio por costo</h3>
+                    <p id="estadisticaPromedioCostos">$0</p>
+                </article>
             </div>
 
             <h3>Gastos por categoría</h3>
+
             <div class="tabla-contenedor">
                 <table>
                     <thead>
                         <tr>
                             <th>Categoría</th>
-                            <th>Cantidad</th>
-                            <th>Total</th>
+                            <th>Total gastado</th>
                         </tr>
                     </thead>
-                    <tbody id="reporteCategorias"></tbody>
+
+                    <tbody id="tablaEstadisticasCategorias">
+                        <tr>
+                            <td colspan="2">Cargando estadísticas...</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
+
+            <button type="button" id="btnActualizarEstadisticas">
+                Actualizar estadísticas
+            </button>
         </section>
 
-        <section class="card ancho-completo">
-            <h2>Historial de costos</h2>
-            <div class="tabla-contenedor">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Descripción</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                            <th>Fecha</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listaCostos"></tbody>
-                </table>
-            </div>
-        </section>
     </main>
 
-    <script src="/gastos.js"></script>
+    <footer class="pie">
+        <p>NEXTREP &copy; 2026 — Gestión financiera</p>
+    </footer>
+
+    <script src="gastos.js"></script>
 </body>
 </html>
