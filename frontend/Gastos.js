@@ -1,307 +1,174 @@
+const monedaCOP = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 2 });
+const estado = { gastos: [], costos: [], editandoGasto: null, editandoCosto: null };
 
-const API = {
-    gastos: "/api/gastos",
-    costos: "/api/costos"
-};
+function moneda(valor) { return monedaCOP.format(Number(valor) || 0); }
+function hoyISO() { const ahora = new Date(); const local = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000); return local.toISOString().slice(0, 10); }
+function valor(id) { return document.getElementById(id).value; }
+function mostrarEstado(id, mensaje) { document.getElementById(id).textContent = mensaje; }
 
-const dinero = new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 2
+async function api(url, opciones = {}) {
+  const respuesta = await fetch(url, {
+    ...opciones,
+    headers: { "Content-Type": "application/json", ...(opciones.headers || {}) }
+  });
+  const datos = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok) throw new Error(datos.error || "Ocurrió un error en la solicitud.");
+  return datos;
+}
+
+function datosFormulario(tipo) {
+  const sufijo = tipo === "gastos" ? "Gasto" : "Costo";
+  return {
+    descripcion: valor(`descripcion${sufijo}`).trim(),
+    categoria: valor(`categoria${sufijo}`).trim() || "General",
+    monto: Number(valor(`monto${sufijo}`)),
+    fecha: valor(`fecha${sufijo}`)
+  };
+}
+
+function limpiarFormulario(tipo) {
+  const sufijo = tipo === "gastos" ? "Gasto" : "Costo";
+  document.getElementById(`form${sufijo}`).reset();
+  document.getElementById(`fecha${sufijo}`).value = hoyISO();
+  estado[tipo === "gastos" ? "editandoGasto" : "editandoCosto"] = null;
+  document.getElementById(`guardar${sufijo}`).textContent = `Guardar ${tipo === "gastos" ? "gasto" : "costo"}`;
+  document.getElementById(`cancelarEdicion${sufijo}`).classList.add("oculto");
+  document.getElementById(`titulo${sufijo}`).textContent = `Registrar ${tipo === "gastos" ? "gasto" : "costo"}`;
+}
+
+async function guardar(tipo, evento) {
+  evento.preventDefault();
+  const sufijo = tipo === "gastos" ? "Gasto" : "Costo";
+  const claveEdicion = tipo === "gastos" ? "editandoGasto" : "editandoCosto";
+  try {
+    const registro = datosFormulario(tipo);
+    const id = estado[claveEdicion];
+    await api(id ? `/api/${tipo}/${id}` : `/api/${tipo}`, {
+      method: id ? "PUT" : "POST",
+      body: JSON.stringify(registro)
+    });
+    limpiarFormulario(tipo);
+    await cargarTodo();
+    mostrarEstado(tipo === "gastos" ? "estadoGastos" : "estadoCostos", `${tipo === "gastos" ? "Gasto" : "Costo"} ${id ? "actualizado" : "guardado"} correctamente.`);
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function renderizarTabla(tipo, registros) {
+  const idTabla = tipo === "gastos" ? "listaGastos" : "listaCostos";
+  const cuerpo = document.getElementById(idTabla);
+  cuerpo.replaceChildren();
+  if (!registros.length) {
+    const fila = document.createElement("tr"); const celda = document.createElement("td");
+    celda.colSpan = 5; celda.textContent = "No hay registros para mostrar."; fila.appendChild(celda); cuerpo.appendChild(fila); return;
+  }
+  registros.forEach(registro => {
+    const fila = document.createElement("tr");
+    [registro.fecha, registro.descripcion, registro.categoria, moneda(registro.monto)].forEach(texto => {
+      const celda = document.createElement("td"); celda.textContent = texto; fila.appendChild(celda);
+    });
+    const acciones = document.createElement("td");
+    const editar = document.createElement("button"); editar.className = "pequeno"; editar.textContent = "Editar"; editar.type = "button";
+    editar.addEventListener("click", () => iniciarEdicion(tipo, registro));
+    const eliminar = document.createElement("button"); eliminar.className = "pequeno peligro"; eliminar.textContent = "Eliminar"; eliminar.type = "button";
+    eliminar.addEventListener("click", () => borrar(tipo, registro.id));
+    acciones.append(editar, eliminar); fila.appendChild(acciones); cuerpo.appendChild(fila);
+  });
+}
+
+function iniciarEdicion(tipo, registro) {
+  const sufijo = tipo === "gastos" ? "Gasto" : "Costo";
+  const claveEdicion = tipo === "gastos" ? "editandoGasto" : "editandoCosto";
+  estado[claveEdicion] = registro.id;
+  document.getElementById(`descripcion${sufijo}`).value = registro.descripcion;
+  document.getElementById(`categoria${sufijo}`).value = registro.categoria;
+  document.getElementById(`monto${sufijo}`).value = registro.monto;
+  document.getElementById(`fecha${sufijo}`).value = registro.fecha;
+  document.getElementById(`guardar${sufijo}`).textContent = `Actualizar ${tipo === "gastos" ? "gasto" : "costo"}`;
+  document.getElementById(`cancelarEdicion${sufijo}`).classList.remove("oculto");
+  document.getElementById(`titulo${sufijo}`).textContent = `Editar ${tipo === "gastos" ? "gasto" : "costo"}`;
+  document.getElementById(`form${sufijo}`).scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function borrar(tipo, id) {
+  if (!confirm(`¿Seguro que deseas eliminar este registro de ${tipo === "gastos" ? "gastos" : "costos"}?`)) return;
+  try {
+    await api(`/api/${tipo}/${id}`, { method: "DELETE" });
+    await cargarTodo();
+    mostrarEstado(tipo === "gastos" ? "estadoGastos" : "estadoCostos", "Registro eliminado correctamente.");
+  } catch (error) { alert(error.message); }
+}
+
+async function cargarGastos() {
+  const parametros = new URLSearchParams();
+  if (valor("desde")) parametros.set("desde", valor("desde"));
+  if (valor("hasta")) parametros.set("hasta", valor("hasta"));
+  const query = parametros.toString();
+  estado.gastos = await api(`/api/gastos${query ? `?${query}` : ""}`);
+  renderizarTabla("gastos", estado.gastos);
+  const total = estado.gastos.reduce((suma, item) => suma + Number(item.monto), 0);
+  document.getElementById("reporteTotal").textContent = moneda(total);
+  document.getElementById("reporteCantidad").textContent = String(estado.gastos.length);
+  document.getElementById("reportePromedio").textContent = moneda(estado.gastos.length ? total / estado.gastos.length : 0);
+}
+
+async function cargarCostos() {
+  estado.costos = await api("/api/costos");
+  renderizarTabla("costos", estado.costos);
+}
+
+async function cargarEstadisticas() {
+  const datos = await api("/api/estadisticas");
+  document.getElementById("estadisticaTotalGastos").textContent = moneda(datos.gastos.total);
+  document.getElementById("estadisticaCantidadGastos").textContent = `${datos.gastos.cantidad} registros`;
+  document.getElementById("estadisticaPromedioGastos").textContent = moneda(datos.gastos.promedio);
+  document.getElementById("estadisticaTotalCostos").textContent = moneda(datos.costos.total);
+  document.getElementById("estadisticaCantidadCostos").textContent = `${datos.costos.cantidad} registros`;
+  document.getElementById("estadisticaPromedioCostos").textContent = moneda(datos.costos.promedio);
+  const tabla = document.getElementById("tablaEstadisticasCategorias");
+  tabla.replaceChildren();
+  if (!datos.gastos_por_categoria.length) {
+    const fila = document.createElement("tr"); const celda = document.createElement("td");
+    celda.colSpan = 2; celda.textContent = "Todavía no hay gastos registrados."; fila.appendChild(celda); tabla.appendChild(fila); return;
+  }
+  datos.gastos_por_categoria.forEach(item => {
+    const fila = document.createElement("tr"); const categoria = document.createElement("td"); const total = document.createElement("td");
+    categoria.textContent = item.categoria; total.textContent = moneda(item.total); fila.append(categoria, total); tabla.appendChild(fila);
+  });
+}
+
+async function cargarTodo() {
+  try {
+    await Promise.all([cargarGastos(), cargarCostos(), cargarEstadisticas()]);
+  } catch (error) {
+    console.error(error);
+    mostrarEstado("estadoGastos", `Error al cargar datos: ${error.message}`);
+    mostrarEstado("estadoCostos", `Error al cargar datos: ${error.message}`);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("fechaGasto").value = hoyISO();
+  document.getElementById("fechaCosto").value = hoyISO();
+  document.getElementById("formGasto").addEventListener("submit", evento => guardar("gastos", evento));
+  document.getElementById("formCosto").addEventListener("submit", evento => guardar("costos", evento));
+  document.getElementById("cancelarEdicionGasto").addEventListener("click", () => limpiarFormulario("gastos"));
+  document.getElementById("cancelarEdicionCosto").addEventListener("click", () => limpiarFormulario("costos"));
+  document.getElementById("filtrarGastos").addEventListener("click", async () => {
+    if (valor("desde") && valor("hasta") && valor("desde") > valor("hasta")) { alert("La fecha inicial no puede ser posterior a la fecha final."); return; }
+    try { await cargarGastos(); } catch (error) { alert(error.message); }
+  });
+  document.getElementById("limpiarFiltros").addEventListener("click", async () => {
+    document.getElementById("desde").value = ""; document.getElementById("hasta").value = "";
+    try { await cargarGastos(); } catch (error) { alert(error.message); }
+  });
+  document.getElementById("actualizarEstadisticas").addEventListener("click", async () => {
+    try { await cargarEstadisticas(); } catch (error) { alert(error.message); }
+  });
+  cargarTodo();
 });
 
-let gastosActuales = [];
-let costosActuales = [];
 
-async function solicitud(url, opciones = {}) {
-    const respuesta = await fetch(url, {
-        ...opciones,
-        headers: {
-            "Content-Type": "application/json",
-            ...opciones.headers
-        }
-    });
-
-    const datos = await respuesta.json();
-
-    if (!respuesta.ok) {
-        throw new Error(datos.error || "Error en la solicitud.");
-    }
-
-    return datos;
-}
-
-function mostrarError(error) {
-    alert(error.message || "No se pudo completar la operación.");
-}
-
-function celda(fila, valor) {
-    const td = document.createElement("td");
-    td.textContent = valor ?? "";
-    fila.appendChild(td);
-    return td;
-}
-
-function crearBoton(texto, clase, accion) {
-    const boton = document.createElement("button");
-    boton.textContent = texto;
-    boton.className = clase;
-    boton.type = "button";
-    boton.addEventListener("click", accion);
-    return boton;
-}
-
-function configurarFormulario(tipo, campos, actualizarLista) {
-    const formulario = document.getElementById(`form${tipo}`);
-    const boton = document.getElementById(`btn${tipo}`);
-    const cancelar = document.getElementById(`cancelar${tipo}`);
-
-    const recurso = tipo === "Gasto" ? "gastos" : "costos";
-    let idEditando = null;
-
-    function limpiar() {
-        formulario.reset();
-        idEditando = null;
-        boton.textContent = `Registrar ${tipo.toLowerCase()}`;
-        cancelar.classList.add("oculto");
-    }
-
-    cancelar.addEventListener("click", limpiar);
-
-    formulario.addEventListener("submit", async (evento) => {
-        evento.preventDefault();
-
-        const datos = {};
-
-        for (const [campo, id] of Object.entries(campos)) {
-            datos[campo] = document.getElementById(id).value.trim();
-        }
-
-        datos.valor = Number(datos.valor);
-
-        if (!Number.isFinite(datos.valor) || datos.valor <= 0) {
-            alert("El valor debe ser mayor que cero.");
-            return;
-        }
-
-        const estabaEditando = idEditando !== null;
-
-        try {
-            const url = idEditando
-                ? `${API[recurso]}/${idEditando}`
-                : API[recurso];
-
-            await solicitud(url, {
-                method: estabaEditando ? "PUT" : "POST",
-                body: JSON.stringify(datos)
-            });
-
-            limpiar();
-            await actualizarLista();
-
-            alert(estabaEditando
-                ? `${tipo} actualizado correctamente.`
-                : `${tipo} registrado correctamente.`);
-        } catch (error) {
-            mostrarError(error);
-        }
-    });
-
-    return {
-        editar(registro) {
-            idEditando = registro.id;
-
-            for (const [campo, id] of Object.entries(campos)) {
-                document.getElementById(id).value =
-                    registro[campo] ?? "";
-            }
-
-            boton.textContent = "Guardar cambios";
-            cancelar.classList.remove("oculto");
-            formulario.scrollIntoView({ behavior: "smooth" });
-        },
-        obtenerId: () => idEditando,
-        limpiar
-    };
-}
-
-function renderizarTabla(registros, elemento, campoTipo, formulario, recurso) {
-    const tbody = document.getElementById(elemento);
-    tbody.replaceChildren();
-
-    if (registros.length === 0) {
-        const fila = document.createElement("tr");
-        const td = celda(fila, "No hay registros para mostrar.");
-        td.colSpan = 5;
-        tbody.appendChild(fila);
-        return;
-    }
-
-    registros.forEach((registro) => {
-        const fila = document.createElement("tr");
-
-        celda(fila, registro.descripcion);
-        celda(fila, registro[campoTipo]);
-        celda(fila, dinero.format(registro.valor));
-        celda(fila, registro.fecha);
-
-        const acciones = celda(fila, "");
-
-        acciones.appendChild(crearBoton("Editar", "accion", () => {
-            formulario.editar(registro);
-        }));
-
-        acciones.appendChild(crearBoton(
-            "Eliminar",
-            "accion eliminar",
-            async () => {
-                if (!confirm("¿Seguro que deseas eliminar este registro?")) {
-                    return;
-                }
-
-                try {
-                    await solicitud(`${API[recurso]}/${registro.id}`, {
-                        method: "DELETE"
-                    });
-
-                    if (formulario.obtenerId() === registro.id) {
-                        formulario.limpiar();
-                    }
-
-                    await cargarDatos();
-                } catch (error) {
-                    mostrarError(error);
-                }
-            }
-        ));
-
-        tbody.appendChild(fila);
-    });
-}
-
-function aplicarFiltros() {
-    const inicio = document.getElementById("fechaInicio").value;
-    const fin = document.getElementById("fechaFin").value;
-
-    if (inicio && fin && inicio > fin) {
-        alert("La fecha inicial no puede ser posterior a la fecha final.");
-        return;
-    }
-
-    const filtrados = gastosActuales.filter((gasto) => {
-        return (!inicio || gasto.fecha >= inicio) &&
-               (!fin || gasto.fecha <= fin);
-    });
-
-    renderizarTabla(
-        filtrados, "listaGastos", "categoria", formularioGasto, "gastos"
-    );
-
-    document.getElementById("mensajeHistorial").textContent =
-        `Se encontraron ${filtrados.length} gastos.`;
-
-    generarReporte(filtrados);
-}
-
-function generarReporte(registros) {
-    const total = registros.reduce(
-        (suma, registro) => suma + Number(registro.valor), 0
-    );
-
-    document.getElementById("totalGastos").textContent =
-        dinero.format(total);
-
-    document.getElementById("cantidadGastos").textContent =
-        registros.length;
-
-    document.getElementById("promedioGastos").textContent =
-        dinero.format(registros.length ? total / registros.length : 0);
-
-    const categorias = {};
-
-    registros.forEach((registro) => {
-        const nombre = registro.categoria;
-
-        if (!categorias[nombre]) {
-            categorias[nombre] = { cantidad: 0, total: 0 };
-        }
-
-        categorias[nombre].cantidad += 1;
-        categorias[nombre].total += Number(registro.valor);
-    });
-
-    const tbody = document.getElementById("reporteCategorias");
-    tbody.replaceChildren();
-
-    const nombres = Object.keys(categorias).sort();
-
-    if (nombres.length === 0) {
-        const fila = document.createElement("tr");
-        const td = celda(fila, "No hay datos para el reporte.");
-        td.colSpan = 3;
-        tbody.appendChild(fila);
-        return;
-    }
-
-    nombres.forEach((nombre) => {
-        const fila = document.createElement("tr");
-
-        celda(fila, nombre);
-        celda(fila, categorias[nombre].cantidad);
-        celda(fila, dinero.format(categorias[nombre].total));
-
-        tbody.appendChild(fila);
-    });
-}
-
-async function cargarDatos() {
-    try {
-        const [gastos, costos] = await Promise.all([
-            solicitud(API.gastos),
-            solicitud(API.costos)
-        ]);
-
-        gastosActuales = gastos;
-        costosActuales = costos;
-
-        aplicarFiltros();
-
-        renderizarTabla(
-            costosActuales, "listaCostos", "tipo", formularioCosto, "costos"
-        );
-    } catch (error) {
-        mostrarError(error);
-    }
-}
-
-const formularioGasto = configurarFormulario(
-    "Gasto",
-    {
-        descripcion: "descripcionGasto",
-        categoria: "categoriaGasto",
-        valor: "valorGasto",
-        fecha: "fechaGasto"
-    },
-    cargarDatos
-);
-
-const formularioCosto = configurarFormulario(
-    "Costo",
-    {
-        descripcion: "descripcionCosto",
-        tipo: "tipoCosto",
-        valor: "valorCosto",
-        fecha: "fechaCosto"
-    },
-    cargarDatos
-);
-
-document.getElementById("btnFiltrar").addEventListener("click", aplicarFiltros);
-
-document.getElementById("btnLimpiar").addEventListener("click", () => {
-    document.getElementById("fechaInicio").value = "";
-    document.getElementById("fechaFin").value = "";
-    aplicarFiltros();
-});
 
 cargarDatos();
