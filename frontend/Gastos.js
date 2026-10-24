@@ -1,174 +1,604 @@
-const monedaCOP = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 2 });
-const estado = { gastos: [], costos: [], editandoGasto: null, editandoCosto: null };
 
-function moneda(valor) { return monedaCOP.format(Number(valor) || 0); }
-function hoyISO() { const ahora = new Date(); const local = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000); return local.toISOString().slice(0, 10); }
-function valor(id) { return document.getElementById(id).value; }
-function mostrarEstado(id, mensaje) { document.getElementById(id).textContent = mensaje; }
+// ======================================================
+// NEXTREP - Gestión financiera
+// Archivo: frontend/gastos/gastos.js
+// ======================================================
 
-async function api(url, opciones = {}) {
-  const respuesta = await fetch(url, {
-    ...opciones,
-    headers: { "Content-Type": "application/json", ...(opciones.headers || {}) }
-  });
-  const datos = await respuesta.json().catch(() => ({}));
-  if (!respuesta.ok) throw new Error(datos.error || "Ocurrió un error en la solicitud.");
-  return datos;
-}
+const API_BASE = "/api";
 
-function datosFormulario(tipo) {
-  const sufijo = tipo === "gastos" ? "Gasto" : "Costo";
-  return {
-    descripcion: valor(`descripcion${sufijo}`).trim(),
-    categoria: valor(`categoria${sufijo}`).trim() || "General",
-    monto: Number(valor(`monto${sufijo}`)),
-    fecha: valor(`fecha${sufijo}`)
-  };
-}
+// ======================================================
+// FUNCIONES GENERALES
+// ======================================================
 
-function limpiarFormulario(tipo) {
-  const sufijo = tipo === "gastos" ? "Gasto" : "Costo";
-  document.getElementById(`form${sufijo}`).reset();
-  document.getElementById(`fecha${sufijo}`).value = hoyISO();
-  estado[tipo === "gastos" ? "editandoGasto" : "editandoCosto"] = null;
-  document.getElementById(`guardar${sufijo}`).textContent = `Guardar ${tipo === "gastos" ? "gasto" : "costo"}`;
-  document.getElementById(`cancelarEdicion${sufijo}`).classList.add("oculto");
-  document.getElementById(`titulo${sufijo}`).textContent = `Registrar ${tipo === "gastos" ? "gasto" : "costo"}`;
-}
-
-async function guardar(tipo, evento) {
-  evento.preventDefault();
-  const sufijo = tipo === "gastos" ? "Gasto" : "Costo";
-  const claveEdicion = tipo === "gastos" ? "editandoGasto" : "editandoCosto";
-  try {
-    const registro = datosFormulario(tipo);
-    const id = estado[claveEdicion];
-    await api(id ? `/api/${tipo}/${id}` : `/api/${tipo}`, {
-      method: id ? "PUT" : "POST",
-      body: JSON.stringify(registro)
+async function api(ruta, opciones = {}) {
+    const respuesta = await fetch(`${API_BASE}${ruta}`, {
+        ...opciones,
+        headers: {
+            "Content-Type": "application/json",
+            ...(opciones.headers || {})
+        }
     });
-    limpiarFormulario(tipo);
-    await cargarTodo();
-    mostrarEstado(tipo === "gastos" ? "estadoGastos" : "estadoCostos", `${tipo === "gastos" ? "Gasto" : "Costo"} ${id ? "actualizado" : "guardado"} correctamente.`);
-  } catch (error) {
-    alert(error.message);
-  }
+
+    if (!respuesta.ok) {
+        let mensaje = `Error ${respuesta.status}`;
+
+        try {
+            const datos = await respuesta.json();
+            mensaje = datos.error || datos.mensaje || mensaje;
+        } catch (_) {}
+
+        throw new Error(mensaje);
+    }
+
+    if (respuesta.status === 204) return null;
+
+    return respuesta.json();
 }
 
-function renderizarTabla(tipo, registros) {
-  const idTabla = tipo === "gastos" ? "listaGastos" : "listaCostos";
-  const cuerpo = document.getElementById(idTabla);
-  cuerpo.replaceChildren();
-  if (!registros.length) {
-    const fila = document.createElement("tr"); const celda = document.createElement("td");
-    celda.colSpan = 5; celda.textContent = "No hay registros para mostrar."; fila.appendChild(celda); cuerpo.appendChild(fila); return;
-  }
-  registros.forEach(registro => {
-    const fila = document.createElement("tr");
-    [registro.fecha, registro.descripcion, registro.categoria, moneda(registro.monto)].forEach(texto => {
-      const celda = document.createElement("td"); celda.textContent = texto; fila.appendChild(celda);
-    });
-    const acciones = document.createElement("td");
-    const editar = document.createElement("button"); editar.className = "pequeno"; editar.textContent = "Editar"; editar.type = "button";
-    editar.addEventListener("click", () => iniciarEdicion(tipo, registro));
-    const eliminar = document.createElement("button"); eliminar.className = "pequeno peligro"; eliminar.textContent = "Eliminar"; eliminar.type = "button";
-    eliminar.addEventListener("click", () => borrar(tipo, registro.id));
-    acciones.append(editar, eliminar); fila.appendChild(acciones); cuerpo.appendChild(fila);
-  });
+function moneda(valor) {
+    return new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        maximumFractionDigits: 2
+    }).format(Number(valor) || 0);
 }
 
-function iniciarEdicion(tipo, registro) {
-  const sufijo = tipo === "gastos" ? "Gasto" : "Costo";
-  const claveEdicion = tipo === "gastos" ? "editandoGasto" : "editandoCosto";
-  estado[claveEdicion] = registro.id;
-  document.getElementById(`descripcion${sufijo}`).value = registro.descripcion;
-  document.getElementById(`categoria${sufijo}`).value = registro.categoria;
-  document.getElementById(`monto${sufijo}`).value = registro.monto;
-  document.getElementById(`fecha${sufijo}`).value = registro.fecha;
-  document.getElementById(`guardar${sufijo}`).textContent = `Actualizar ${tipo === "gastos" ? "gasto" : "costo"}`;
-  document.getElementById(`cancelarEdicion${sufijo}`).classList.remove("oculto");
-  document.getElementById(`titulo${sufijo}`).textContent = `Editar ${tipo === "gastos" ? "gasto" : "costo"}`;
-  document.getElementById(`form${sufijo}`).scrollIntoView({ behavior: "smooth", block: "center" });
+function escaparHTML(valor) {
+    return String(valor ?? "").replace(/[&<>"']/g, caracter => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[caracter]);
 }
 
-async function borrar(tipo, id) {
-  if (!confirm(`¿Seguro que deseas eliminar este registro de ${tipo === "gastos" ? "gastos" : "costos"}?`)) return;
-  try {
-    await api(`/api/${tipo}/${id}`, { method: "DELETE" });
-    await cargarTodo();
-    mostrarEstado(tipo === "gastos" ? "estadoGastos" : "estadoCostos", "Registro eliminado correctamente.");
-  } catch (error) { alert(error.message); }
+function elemento(id) {
+    return document.getElementById(id);
 }
+
+function establecerTexto(id, valor) {
+    const campo = elemento(id);
+    if (campo) campo.textContent = valor;
+}
+
+function establecerValor(id, valor) {
+    const campo = elemento(id);
+    if (campo) campo.value = valor ?? "";
+}
+
+function mostrarError(error) {
+    console.error(error);
+    alert(error.message || "Ocurrió un error al procesar la solicitud.");
+}
+
+// ======================================================
+// GASTOS: CONSULTAR Y FILTRAR
+// ======================================================
 
 async function cargarGastos() {
-  const parametros = new URLSearchParams();
-  if (valor("desde")) parametros.set("desde", valor("desde"));
-  if (valor("hasta")) parametros.set("hasta", valor("hasta"));
-  const query = parametros.toString();
-  estado.gastos = await api(`/api/gastos${query ? `?${query}` : ""}`);
-  renderizarTabla("gastos", estado.gastos);
-  const total = estado.gastos.reduce((suma, item) => suma + Number(item.monto), 0);
-  document.getElementById("reporteTotal").textContent = moneda(total);
-  document.getElementById("reporteCantidad").textContent = String(estado.gastos.length);
-  document.getElementById("reportePromedio").textContent = moneda(estado.gastos.length ? total / estado.gastos.length : 0);
+    const desde = elemento("filtroFechaInicio")?.value || "";
+    const hasta = elemento("filtroFechaFin")?.value || "";
+    const categoria = elemento("filtroCategoria")?.value || "";
+
+    const parametros = new URLSearchParams();
+
+    if (desde) parametros.set("desde", desde);
+    if (hasta) parametros.set("hasta", hasta);
+
+    const consulta = parametros.toString()
+        ? `?${parametros.toString()}`
+        : "";
+
+    let gastos = await api(`/gastos${consulta}`);
+
+    if (!Array.isArray(gastos)) {
+        gastos = gastos.gastos || [];
+    }
+
+    // El backend no filtra por categoría, así que se hace aquí.
+    if (categoria) {
+        gastos = gastos.filter(
+            gasto => gasto.categoria === categoria
+        );
+    }
+
+    const tabla = elemento("listaGastos");
+    if (!tabla) return;
+
+    if (gastos.length === 0) {
+        tabla.innerHTML = `
+            <tr>
+                <td colspan="6">No hay gastos registrados.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tabla.innerHTML = gastos.map(gasto => `
+        <tr>
+            <td>${escaparHTML(gasto.descripcion)}</td>
+            <td>${escaparHTML(gasto.categoria)}</td>
+            <td>${moneda(gasto.monto)}</td>
+            <td>${escaparHTML(gasto.fecha)}</td>
+            <td>
+                <button type="button"
+                    data-editar-gasto="${gasto.id}">
+                    Editar
+                </button>
+                <button type="button"
+                    data-eliminar-gasto="${gasto.id}">
+                    Eliminar
+                </button>
+            </td>
+        </tr>
+    `).join("");
+
+    tabla.querySelectorAll("[data-editar-gasto]").forEach(boton => {
+        boton.addEventListener("click", () => {
+            const gasto = gastos.find(
+                registro => registro.id === Number(boton.dataset.editarGasto)
+            );
+
+            if (gasto) editarGasto(gasto);
+        });
+    });
+
+    tabla.querySelectorAll("[data-eliminar-gasto]").forEach(boton => {
+        boton.addEventListener("click", async () => {
+            try {
+                await eliminarRegistro(
+                    "gastos",
+                    boton.dataset.eliminarGasto
+                );
+            } catch (error) {
+                mostrarError(error);
+            }
+        });
+    });
 }
+
+// ======================================================
+// GASTOS: REGISTRAR Y EDITAR
+// ======================================================
+
+function editarGasto(gasto) {
+    establecerValor("gastoId", gasto.id);
+    establecerValor("descripcionGasto", gasto.descripcion);
+    establecerValor("categoriaGasto", gasto.categoria);
+    establecerValor("montoGasto", gasto.monto);
+    establecerValor("fechaGasto", gasto.fecha);
+
+    elemento("formGasto")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+async function guardarGasto(evento) {
+    evento.preventDefault();
+
+    const id = elemento("gastoId")?.value;
+
+    const datos = {
+        descripcion: elemento("descripcionGasto").value.trim(),
+        categoria: elemento("categoriaGasto").value,
+        monto: Number(elemento("montoGasto").value),
+        fecha: elemento("fechaGasto").value
+    };
+
+    if (
+        !datos.descripcion ||
+        !datos.categoria ||
+        !datos.fecha ||
+        !Number.isFinite(datos.monto) ||
+        datos.monto < 0
+    ) {
+        alert("Verifica la descripción, categoría, monto y fecha del gasto.");
+        return;
+    }
+
+    try {
+        await api(
+            id ? `/gastos/${encodeURIComponent(id)}` : "/gastos",
+            {
+                method: id ? "PUT" : "POST",
+                body: JSON.stringify(datos)
+            }
+        );
+
+        alert(id ? "Gasto actualizado correctamente." :
+            "Gasto registrado correctamente.");
+
+        limpiarFormulario("gastos");
+
+        await Promise.all([
+            cargarGastos(),
+            cargarReporte(),
+            cargarEstadisticas()
+        ]);
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+// ======================================================
+// COSTOS: CONSULTAR
+// ======================================================
 
 async function cargarCostos() {
-  estado.costos = await api("/api/costos");
-  renderizarTabla("costos", estado.costos);
+    let costos = await api("/costos");
+
+    if (!Array.isArray(costos)) {
+        costos = costos.costos || [];
+    }
+
+    const tabla = elemento("listaCostos");
+    if (!tabla) return;
+
+    if (costos.length === 0) {
+        tabla.innerHTML = `
+            <tr>
+                <td colspan="6">No hay costos registrados.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tabla.innerHTML = costos.map(costo => `
+        <tr>
+            <td>${escaparHTML(costo.descripcion)}</td>
+            <td>${escaparHTML(costo.categoria)}</td>
+            <td>${moneda(costo.monto)}</td>
+            <td>${escaparHTML(costo.fecha)}</td>
+            <td>
+                <button type="button"
+                    data-editar-costo="${costo.id}">
+                    Editar
+                </button>
+                <button type="button"
+                    data-eliminar-costo="${costo.id}">
+                    Eliminar
+                </button>
+            </td>
+        </tr>
+    `).join("");
+
+    tabla.querySelectorAll("[data-editar-costo]").forEach(boton => {
+        boton.addEventListener("click", () => {
+            const costo = costos.find(
+                registro => registro.id === Number(boton.dataset.editarCosto)
+            );
+
+            if (costo) editarCosto(costo);
+        });
+    });
+
+    tabla.querySelectorAll("[data-eliminar-costo]").forEach(boton => {
+        boton.addEventListener("click", async () => {
+            try {
+                await eliminarRegistro(
+                    "costos",
+                    boton.dataset.eliminarCosto
+                );
+            } catch (error) {
+                mostrarError(error);
+            }
+        });
+    });
 }
+
+// ======================================================
+// COSTOS: REGISTRAR Y EDITAR
+// ======================================================
+
+function editarCosto(costo) {
+    establecerValor("costoId", costo.id);
+    establecerValor("descripcionCosto", costo.descripcion);
+    establecerValor("categoriaCosto", costo.categoria);
+    establecerValor("montoCosto", costo.monto);
+    establecerValor("fechaCosto", costo.fecha);
+
+    elemento("formCosto")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+async function guardarCosto(evento) {
+    evento.preventDefault();
+
+    const id = elemento("costoId")?.value;
+
+    const datos = {
+        descripcion: elemento("descripcionCosto").value.trim(),
+        categoria: elemento("categoriaCosto").value,
+        monto: Number(elemento("montoCosto").value),
+        fecha: elemento("fechaCosto").value
+    };
+
+    if (
+        !datos.descripcion ||
+        !datos.categoria ||
+        !datos.fecha ||
+        !Number.isFinite(datos.monto) ||
+        datos.monto < 0
+    ) {
+        alert("Verifica la descripción, categoría, monto y fecha del costo.");
+        return;
+    }
+
+    try {
+        await api(
+            id ? `/costos/${encodeURIComponent(id)}` : "/costos",
+            {
+                method: id ? "PUT" : "POST",
+                body: JSON.stringify(datos)
+            }
+        );
+
+        alert(id ? "Costo actualizado correctamente." :
+            "Costo registrado correctamente.");
+
+        limpiarFormulario("costos");
+
+        await Promise.all([
+            cargarCostos(),
+            cargarEstadisticas()
+        ]);
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+// ======================================================
+// LIMPIAR FORMULARIOS
+// ======================================================
+
+function limpiarFormulario(tipo) {
+    if (tipo === "gastos") {
+        elemento("formGasto")?.reset();
+        establecerValor("gastoId", "");
+    }
+
+    if (tipo === "costos") {
+        elemento("formCosto")?.reset();
+        establecerValor("costoId", "");
+    }
+}
+
+// ======================================================
+// ELIMINAR REGISTROS
+// ======================================================
+
+async function eliminarRegistro(tipo, id) {
+    if (!confirm(`¿Deseas eliminar este registro de ${tipo}?`)) {
+        return;
+    }
+
+    await api(`/${tipo}/${encodeURIComponent(id)}`, {
+        method: "DELETE"
+    });
+
+    alert("Registro eliminado correctamente.");
+
+    if (tipo === "gastos") {
+        await Promise.all([
+            cargarGastos(),
+            cargarReporte()
+        ]);
+    } else {
+        await cargarCostos();
+    }
+
+    await cargarEstadisticas();
+}
+
+// ======================================================
+// REPORTE DE GASTOS
+// ======================================================
+
+async function cargarReporte() {
+    let gastos = await api("/gastos");
+
+    if (!Array.isArray(gastos)) {
+        gastos = gastos.gastos || [];
+    }
+
+    const total = gastos.reduce(
+        (suma, gasto) => suma + Number(gasto.monto || 0),
+        0
+    );
+
+    establecerTexto("totalGastos", moneda(total));
+    establecerTexto("cantidadGastos", gastos.length);
+    establecerTexto(
+        "promedioGastos",
+        moneda(gastos.length ? total / gastos.length : 0)
+    );
+
+    const grupos = {};
+
+    gastos.forEach(gasto => {
+        const categoria = gasto.categoria || "Sin categoría";
+
+        if (!grupos[categoria]) {
+            grupos[categoria] = {
+                cantidad: 0,
+                total: 0
+            };
+        }
+
+        grupos[categoria].cantidad++;
+        grupos[categoria].total += Number(gasto.monto || 0);
+    });
+
+    const tabla = elemento("tablaReporteCategorias");
+    if (!tabla) return;
+
+    const categorias = Object.entries(grupos);
+
+    tabla.innerHTML = categorias.length
+        ? categorias.map(([categoria, datos]) => `
+            <tr>
+                <td>${escaparHTML(categoria)}</td>
+                <td>${datos.cantidad}</td>
+                <td>${moneda(datos.total)}</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="3">No hay datos disponibles.</td></tr>`;
+}
+
+// ======================================================
+// ESTADÍSTICAS: GASTOS Y COSTOS
+// ======================================================
 
 async function cargarEstadisticas() {
-  const datos = await api("/api/estadisticas");
-  document.getElementById("estadisticaTotalGastos").textContent = moneda(datos.gastos.total);
-  document.getElementById("estadisticaCantidadGastos").textContent = `${datos.gastos.cantidad} registros`;
-  document.getElementById("estadisticaPromedioGastos").textContent = moneda(datos.gastos.promedio);
-  document.getElementById("estadisticaTotalCostos").textContent = moneda(datos.costos.total);
-  document.getElementById("estadisticaCantidadCostos").textContent = `${datos.costos.cantidad} registros`;
-  document.getElementById("estadisticaPromedioCostos").textContent = moneda(datos.costos.promedio);
-  const tabla = document.getElementById("tablaEstadisticasCategorias");
-  tabla.replaceChildren();
-  if (!datos.gastos_por_categoria.length) {
-    const fila = document.createElement("tr"); const celda = document.createElement("td");
-    celda.colSpan = 2; celda.textContent = "Todavía no hay gastos registrados."; fila.appendChild(celda); tabla.appendChild(fila); return;
-  }
-  datos.gastos_por_categoria.forEach(item => {
-    const fila = document.createElement("tr"); const categoria = document.createElement("td"); const total = document.createElement("td");
-    categoria.textContent = item.categoria; total.textContent = moneda(item.total); fila.append(categoria, total); tabla.appendChild(fila);
-  });
+    const datos = await api("/estadisticas");
+
+    const gastos = datos.gastos || {};
+    const costos = datos.costos || {};
+
+    establecerTexto(
+        "estadisticaTotalGastos",
+        moneda(gastos.total)
+    );
+
+    establecerTexto(
+        "estadisticaCantidadGastos",
+        `${Number(gastos.cantidad || 0)} registros`
+    );
+
+    establecerTexto(
+        "estadisticaPromedioGastos",
+        moneda(gastos.promedio)
+    );
+
+    establecerTexto(
+        "estadisticaTotalCostos",
+        moneda(costos.total)
+    );
+
+    establecerTexto(
+        "estadisticaCantidadCostos",
+        `${Number(costos.cantidad || 0)} registros`
+    );
+
+    establecerTexto(
+        "estadisticaPromedioCostos",
+        moneda(costos.promedio)
+    );
+
+    const tabla = elemento("tablaEstadisticasCategorias");
+    if (!tabla) return;
+
+    const categorias = datos.gastos_por_categoria || [];
+
+    if (categorias.length === 0) {
+        tabla.innerHTML = `
+            <tr>
+                <td colspan="2">Todavía no hay gastos registrados.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tabla.innerHTML = categorias.map(item => `
+        <tr>
+            <td>${escaparHTML(item.categoria)}</td>
+            <td>${moneda(item.total)}</td>
+        </tr>
+    `).join("");
 }
 
-async function cargarTodo() {
-  try {
-    await Promise.all([cargarGastos(), cargarCostos(), cargarEstadisticas()]);
-  } catch (error) {
-    console.error(error);
-    mostrarEstado("estadoGastos", `Error al cargar datos: ${error.message}`);
-    mostrarEstado("estadoCostos", `Error al cargar datos: ${error.message}`);
-  }
-}
+// ======================================================
+// INICIALIZACIÓN Y EVENTOS
+// ======================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("fechaGasto").value = hoyISO();
-  document.getElementById("fechaCosto").value = hoyISO();
-  document.getElementById("formGasto").addEventListener("submit", evento => guardar("gastos", evento));
-  document.getElementById("formCosto").addEventListener("submit", evento => guardar("costos", evento));
-  document.getElementById("cancelarEdicionGasto").addEventListener("click", () => limpiarFormulario("gastos"));
-  document.getElementById("cancelarEdicionCosto").addEventListener("click", () => limpiarFormulario("costos"));
-  document.getElementById("filtrarGastos").addEventListener("click", async () => {
-    if (valor("desde") && valor("hasta") && valor("desde") > valor("hasta")) { alert("La fecha inicial no puede ser posterior a la fecha final."); return; }
-    try { await cargarGastos(); } catch (error) { alert(error.message); }
-  });
-  document.getElementById("limpiarFiltros").addEventListener("click", async () => {
-    document.getElementById("desde").value = ""; document.getElementById("hasta").value = "";
-    try { await cargarGastos(); } catch (error) { alert(error.message); }
-  });
-  document.getElementById("actualizarEstadisticas").addEventListener("click", async () => {
-    try { await cargarEstadisticas(); } catch (error) { alert(error.message); }
-  });
-  cargarTodo();
-});
+    elemento("formGasto")?.addEventListener(
+        "submit",
+        guardarGasto
+    );
 
+    elemento("formCosto")?.addEventListener(
+        "submit",
+        guardarCosto
+    );
+
+    elemento("btnCancelarGasto")?.addEventListener(
+        "click",
+        () => limpiarFormulario("gastos")
+    );
+
+    elemento("btnCancelarCosto")?.addEventListener(
+        "click",
+        () => limpiarFormulario("costos")
+    );
+
+    // Aplicar filtros de gastos.
+    elemento("btnFiltrar")?.addEventListener("click", async () => {
+        const desde = elemento("filtroFechaInicio")?.value || "";
+        const hasta = elemento("filtroFechaFin")?.value || "";
+
+        if (desde && hasta && desde > hasta) {
+            alert("La fecha inicial no puede ser posterior a la fecha final.");
+            return;
+        }
+
+        try {
+            await cargarGastos();
+        } catch (error) {
+            mostrarError(error);
+        }
+    });
+
+    // Limpiar filtros.
+    elemento("btnLimpiarFiltros")?.addEventListener(
+        "click",
+        async () => {
+            establecerValor("filtroFechaInicio", "");
+            establecerValor("filtroFechaFin", "");
+            establecerValor("filtroCategoria", "");
+
+            try {
+                await cargarGastos();
+            } catch (error) {
+                mostrarError(error);
+            }
+        }
+    );
+
+    // Identificador correcto del botón en gastos.html.
+    elemento("btnActualizarEstadisticas")?.addEventListener(
+        "click",
+        async () => {
+            try {
+                await cargarEstadisticas();
+            } catch (error) {
+                mostrarError(error);
+            }
+        }
+    );
+
+    // Cargar información al abrir la página.
+    Promise.allSettled([
+        cargarGastos(),
+        cargarCostos(),
+        cargarReporte(),
+        cargarEstadisticas()
+    ]).then(resultados => {
+        resultados.forEach(resultado => {
+            if (resultado.status === "rejected") {
+                console.error(
+                    "No se pudo cargar una sección:",
+                    resultado.reason
+                );
+            }
+        });
+    });
+});
+```
 
 
 cargarDatos();
