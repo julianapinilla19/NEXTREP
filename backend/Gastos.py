@@ -1,199 +1,168 @@
-
 from pathlib import Path
-from datetime import date
 import sqlite3
-
 from flask import Flask, jsonify, request, send_from_directory
 
 app = Flask(__name__)
-
-RAIZ = Path(__file__).resolve().parents[2]
-FRONTEND = RAIZ / "frontend" / "gastos"
-BASE_DATOS = RAIZ / "database" / "nextrep_gastos.db"
-
-BASE_DATOS.parent.mkdir(parents=True, exist_ok=True)
+BASE_DIR = Path(__file__).resolve().parents[2]
+FRONTEND_DIR = BASE_DIR / "frontend" / "gastos"
+DB_PATH = BASE_DIR / "database" / "nextrep_gastos.db"
 
 
-def conectar():
-    db = sqlite3.connect(BASE_DATOS)
-    db.row_factory = sqlite3.Row
-    return db
+def conectar_bd():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conexion = sqlite3.connect(DB_PATH)
+    conexion.row_factory = sqlite3.Row
+    conexion.execute("PRAGMA foreign_keys = ON")
+    return conexion
 
 
 def inicializar_bd():
-    with conectar() as db:
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS gastos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                descripcion TEXT NOT NULL,
-                categoria TEXT NOT NULL,
-                valor REAL NOT NULL CHECK(valor > 0),
-                fecha TEXT NOT NULL
-            )
-        """)
-
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS costos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                descripcion TEXT NOT NULL,
-                tipo TEXT NOT NULL,
-                valor REAL NOT NULL CHECK(valor > 0),
-                fecha TEXT NOT NULL
-            )
-        """)
+    with conectar_bd() as conexion:
+        for tabla in ("gastos", "costos"):
+            conexion.execute(f"""
+                CREATE TABLE IF NOT EXISTS {tabla} (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    descripcion TEXT NOT NULL,
+                    categoria TEXT NOT NULL DEFAULT 'General',
+                    monto REAL NOT NULL CHECK (monto >= 0),
+                    fecha TEXT NOT NULL
+                )
+            """)
 
 
-@app.route("/")
-def inicio():
-    return send_from_directory(FRONTEND, "gastos.html")
-
-
-@app.route("/<path:archivo>")
-def archivos_frontend(archivo):
-    if archivo not in {"gastos.css", "gastos.js"}:
-        return jsonify({"error": "Archivo no encontrado"}), 404
-
-    return send_from_directory(FRONTEND, archivo)
-
-
-def validar(datos, recurso):
-    campo_tipo = "categoria" if recurso == "gastos" else "tipo"
-
-    descripcion = datos.get("descripcion")
-    clasificacion = datos.get(campo_tipo)
-    fecha = datos.get("fecha")
-
+def validar_registro(datos):
+    descripcion = str(datos.get("descripcion", "")).strip()
+    categoria = str(datos.get("categoria", "General")).strip() or "General"
+    fecha = str(datos.get("fecha", "")).strip()
     try:
-        valor = float(datos.get("valor"))
+        monto = float(datos.get("monto", 0))
     except (TypeError, ValueError):
-        return None, "El valor debe ser numérico."
-
-    if not isinstance(descripcion, str) or not descripcion.strip():
-        return None, "La descripción es obligatoria."
-
-    if not isinstance(clasificacion, str) or not clasificacion.strip():
-        return None, "La categoría o tipo es obligatorio."
-
-    if not isinstance(fecha, str):
-        return None, "La fecha es obligatoria."
-
-    try:
-        fecha_obj = date.fromisoformat(fecha)
-        if fecha_obj.isoformat() != fecha:
-            raise ValueError
-    except ValueError:
-        return None, "La fecha debe tener formato AAAA-MM-DD."
-
-    if not 0 < valor < float("inf"):
-        return None, "El valor debe ser mayor que cero y finito."
-
-    return {
-        "descripcion": descripcion.strip(),
-        campo_tipo: clasificacion.strip(),
-        "valor": valor,
-        "fecha": fecha
-    }, None
+        raise ValueError("El monto debe ser numérico.")
+    if not descripcion:
+        raise ValueError("La descripción es obligatoria.")
+    if not fecha:
+        raise ValueError("La fecha es obligatoria.")
+    if monto < 0:
+        raise ValueError("El monto no puede ser negativo.")
+    return descripcion, categoria, monto, fecha
 
 
-def registrar_rutas(recurso):
-    campo_tipo = "categoria" if recurso == "gastos" else "tipo"
+def registrar_rutas(tabla):
+    # El nombre de tabla proviene únicamente de las llamadas internas al final del archivo.
+    endpoint = tabla
 
     def listar():
-        with conectar() as db:
-            filas = db.execute(
-                f"SELECT * FROM {recurso} ORDER BY fecha DESC, id DESC"
-            ).fetchall()
-
+        fecha_inicio = request.args.get("desde", "").strip()
+        fecha_fin = request.args.get("hasta", "").strip()
+        consulta = f"SELECT id, descripcion, categoria, monto, fecha FROM {tabla}"
+        condiciones, parametros = [], []
+        if fecha_inicio:
+            condiciones.append("fecha >= ?")
+            parametros.append(fecha_inicio)
+        if fecha_fin:
+            condiciones.append("fecha <= ?")
+            parametros.append(fecha_fin)
+        if condiciones:
+            consulta += " WHERE " + " AND ".join(condiciones)
+        consulta += " ORDER BY fecha DESC, id DESC"
+        with conectar_bd() as conexion:
+            filas = conexion.execute(consulta, parametros).fetchall()
         return jsonify([dict(fila) for fila in filas])
 
     def crear():
-        datos, error = validar(request.get_json(silent=True) or {}, recurso)
-
-        if error:
-            return jsonify({"error": error}), 400
-
-        with conectar() as db:
-            cursor = db.execute(
-                f"""INSERT INTO {recurso}
-                    (descripcion, {campo_tipo}, valor, fecha)
-                    VALUES (?, ?, ?, ?)""",
-                (
-                    datos["descripcion"],
-                    datos[campo_tipo],
-                    datos["valor"],
-                    datos["fecha"]
-                )
+        try:
+            descripcion, categoria, monto, fecha = validar_registro(request.get_json(silent=True) or {})
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        with conectar_bd() as conexion:
+            cursor = conexion.execute(
+                f"INSERT INTO {tabla} (descripcion, categoria, monto, fecha) VALUES (?, ?, ?, ?)",
+                (descripcion, categoria, monto, fecha),
             )
-            nuevo_id = cursor.lastrowid
+            registro_id = cursor.lastrowid
+            fila = conexion.execute(
+                f"SELECT id, descripcion, categoria, monto, fecha FROM {tabla} WHERE id = ?",
+                (registro_id,),
+            ).fetchone()
+        return jsonify(dict(fila)), 201
 
-        return jsonify({
-            "mensaje": "Registro creado correctamente.",
-            "id": nuevo_id
-        }), 201
-
-    def actualizar(registro_id):
-        datos, error = validar(request.get_json(silent=True) or {}, recurso)
-
-        if error:
-            return jsonify({"error": error}), 400
-
-        with conectar() as db:
-            cursor = db.execute(
-                f"""UPDATE {recurso}
-                    SET descripcion = ?, {campo_tipo} = ?,
-                        valor = ?, fecha = ?
-                    WHERE id = ?""",
-                (
-                    datos["descripcion"],
-                    datos[campo_tipo],
-                    datos["valor"],
-                    datos["fecha"],
-                    registro_id
-                )
+    def editar(registro_id):
+        try:
+            descripcion, categoria, monto, fecha = validar_registro(request.get_json(silent=True) or {})
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        with conectar_bd() as conexion:
+            cursor = conexion.execute(
+                f"UPDATE {tabla} SET descripcion = ?, categoria = ?, monto = ?, fecha = ? WHERE id = ?",
+                (descripcion, categoria, monto, fecha, registro_id),
             )
-
             if cursor.rowcount == 0:
                 return jsonify({"error": "Registro no encontrado."}), 404
-
-        return jsonify({"mensaje": "Registro actualizado correctamente."})
+            fila = conexion.execute(
+                f"SELECT id, descripcion, categoria, monto, fecha FROM {tabla} WHERE id = ?",
+                (registro_id,),
+            ).fetchone()
+        return jsonify(dict(fila))
 
     def eliminar(registro_id):
-        with conectar() as db:
-            cursor = db.execute(
-                f"DELETE FROM {recurso} WHERE id = ?",
-                (registro_id,)
-            )
-
+        with conectar_bd() as conexion:
+            cursor = conexion.execute(f"DELETE FROM {tabla} WHERE id = ?", (registro_id,))
             if cursor.rowcount == 0:
                 return jsonify({"error": "Registro no encontrado."}), 404
-
         return jsonify({"mensaje": "Registro eliminado correctamente."})
 
-    # Endpoints con nombres únicos para cada recurso.
-    app.add_url_rule(
-        f"/api/{recurso}", endpoint=f"{recurso}_listar",
-        view_func=listar, methods=["GET"]
-    )
-    app.add_url_rule(
-        f"/api/{recurso}", endpoint=f"{recurso}_crear",
-        view_func=crear, methods=["POST"]
-    )
-    app.add_url_rule(
-        f"/api/{recurso}/<int:registro_id>",
-        endpoint=f"{recurso}_actualizar",
-        view_func=actualizar, methods=["PUT"]
-    )
-    app.add_url_rule(
-        f"/api/{recurso}/<int:registro_id>",
-        endpoint=f"{recurso}_eliminar",
-        view_func=eliminar, methods=["DELETE"]
-    )
+    app.add_url_rule(f"/api/{tabla}", endpoint=f"listar_{endpoint}", view_func=listar, methods=["GET"])
+    app.add_url_rule(f"/api/{tabla}", endpoint=f"crear_{endpoint}", view_func=crear, methods=["POST"])
+    app.add_url_rule(f"/api/{tabla}/<int:registro_id>", endpoint=f"editar_{endpoint}", view_func=editar, methods=["PUT"])
+    app.add_url_rule(f"/api/{tabla}/<int:registro_id>", endpoint=f"eliminar_{endpoint}", view_func=eliminar, methods=["DELETE"])
 
 
 registrar_rutas("gastos")
 registrar_rutas("costos")
 
 
+@app.get("/api/estadisticas")
+def obtener_estadisticas():
+    resultado = {}
+    with conectar_bd() as conexion:
+        for tabla in ("gastos", "costos"):
+            fila = conexion.execute(f"""
+                SELECT COUNT(*) AS cantidad,
+                       COALESCE(SUM(monto), 0) AS total,
+                       COALESCE(AVG(monto), 0) AS promedio
+                FROM {tabla}
+            """).fetchone()
+            resultado[tabla] = {
+                "cantidad": fila["cantidad"],
+                "total": round(float(fila["total"]), 2),
+                "promedio": round(float(fila["promedio"]), 2),
+            }
+        filas = conexion.execute("""
+            SELECT categoria, SUM(monto) AS total
+            FROM gastos
+            GROUP BY categoria
+            ORDER BY total DESC
+        """).fetchall()
+        resultado["gastos_por_categoria"] = [
+            {"categoria": fila["categoria"] or "Sin categoría", "total": round(float(fila["total"]), 2)}
+            for fila in filas
+        ]
+    return jsonify(resultado)
+
+
+@app.get("/")
+def inicio():
+    return send_from_directory(FRONTEND_DIR, "gastos.html")
+
+
+@app.get("/<path:nombre_archivo>")
+def archivos_frontend(nombre_archivo):
+    if nombre_archivo in {"gastos.html", "gastos.css", "gastos.js"}:
+        return send_from_directory(FRONTEND_DIR, nombre_archivo)
+    return jsonify({"error": "Archivo no encontrado."}), 404
+
+
 if __name__ == "__main__":
     inicializar_bd()
     app.run(debug=True)
+
