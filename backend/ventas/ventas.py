@@ -1,5 +1,5 @@
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
 import sqlite3
 from pathlib import Path
 
@@ -8,6 +8,7 @@ app = Flask(__name__)
 # Ubicacion de las carpetas del proyecto
 RAIZ = Path(__file__).resolve().parents[2]
 FRONTEND = RAIZ / "frontend" / "ventas"
+PANEL = RAIZ / "frontend" / "index.html"
 BASE_DATOS = RAIZ / "database" / "nextrep_gastos.db"
 
 
@@ -41,7 +42,9 @@ def crear_tabla():
         if "fecha" not in columnas:
             db.execute("ALTER TABLE ventas ADD COLUMN fecha TEXT")
 
-
+@app.route("/panel")
+def panel_principal():
+    return send_file(PANEL)
 @app.route("/")
 def inicio():
     return send_from_directory(FRONTEND, "ventas.html")
@@ -191,6 +194,44 @@ def eliminar_venta(venta_id):
 
     return jsonify({"mensaje": "Venta eliminada correctamente"})
 
+@app.route("/api/resumen", methods=["GET"])
+def resumen_financiero():
+    with conectar() as db:
+        def consultar_total(tabla, condicion=""):
+            existe = db.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='table' AND name=?",
+                (tabla,)
+            ).fetchone()
+
+            if not existe:
+                return 0
+
+            consulta = f"SELECT COALESCE(SUM(valor), 0) FROM {tabla}"
+            if condicion:
+                consulta += f" WHERE {condicion}"
+
+            return db.execute(consulta).fetchone()[0] or 0
+
+        total_ventas = db.execute(
+            "SELECT COALESCE(SUM(total), 0) FROM ventas"
+        ).fetchone()[0] or 0
+
+        total_cobros = consultar_total(
+            "cobros", "estado = 'Pagado'"
+        )
+        total_gastos = consultar_total("gastos")
+        total_costos = consultar_total("costos")
+
+    balance = total_ventas - total_gastos - total_costos
+
+    return jsonify({
+        "ventas": total_ventas,
+        "cobros_pagados": total_cobros,
+        "gastos": total_gastos,
+        "costos": total_costos,
+        "balance": balance
+    })
 
 if __name__ == "__main__":
     crear_tabla()
