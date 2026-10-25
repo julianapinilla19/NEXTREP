@@ -1,4 +1,3 @@
-
 // ======================================================
 // NEXTREP - Gestión financiera
 // Archivo: frontend/gastos/gastos.js
@@ -96,7 +95,6 @@ async function cargarGastos() {
         gastos = gastos.gastos || [];
     }
 
-    // El backend no filtra por categoría, así que se hace aquí.
     if (categoria) {
         gastos = gastos.filter(
             gasto => gasto.categoria === categoria
@@ -109,7 +107,7 @@ async function cargarGastos() {
     if (gastos.length === 0) {
         tabla.innerHTML = `
             <tr>
-                <td colspan="6">No hay gastos registrados.</td>
+                <td colspan="5">No hay gastos registrados.</td>
             </tr>
         `;
         return;
@@ -119,7 +117,7 @@ async function cargarGastos() {
         <tr>
             <td>${escaparHTML(gasto.descripcion)}</td>
             <td>${escaparHTML(gasto.categoria)}</td>
-            <td>${moneda(gasto.monto)}</td>
+            <td>${moneda(gasto.valor)}</td>
             <td>${escaparHTML(gasto.fecha)}</td>
             <td>
                 <button type="button"
@@ -166,7 +164,7 @@ function editarGasto(gasto) {
     establecerValor("gastoId", gasto.id);
     establecerValor("descripcionGasto", gasto.descripcion);
     establecerValor("categoriaGasto", gasto.categoria);
-    establecerValor("montoGasto", gasto.monto);
+    establecerValor("montoGasto", gasto.valor);
     establecerValor("fechaGasto", gasto.fecha);
 
     elemento("formGasto")?.scrollIntoView({
@@ -183,7 +181,7 @@ async function guardarGasto(evento) {
     const datos = {
         descripcion: elemento("descripcionGasto").value.trim(),
         categoria: elemento("categoriaGasto").value,
-        monto: Number(elemento("montoGasto").value),
+        valor: Number(elemento("montoGasto").value),
         fecha: elemento("fechaGasto").value
     };
 
@@ -191,8 +189,8 @@ async function guardarGasto(evento) {
         !datos.descripcion ||
         !datos.categoria ||
         !datos.fecha ||
-        !Number.isFinite(datos.monto) ||
-        datos.monto < 0
+        !Number.isFinite(datos.valor) ||
+        datos.valor < 0
     ) {
         alert("Verifica la descripción, categoría, monto y fecha del gasto.");
         return;
@@ -239,7 +237,7 @@ async function cargarCostos() {
     if (costos.length === 0) {
         tabla.innerHTML = `
             <tr>
-                <td colspan="6">No hay costos registrados.</td>
+                <td colspan="5">No hay costos registrados.</td>
             </tr>
         `;
         return;
@@ -248,8 +246,8 @@ async function cargarCostos() {
     tabla.innerHTML = costos.map(costo => `
         <tr>
             <td>${escaparHTML(costo.descripcion)}</td>
-            <td>${escaparHTML(costo.categoria)}</td>
-            <td>${moneda(costo.monto)}</td>
+            <td>${escaparHTML(costo.tipo)}</td>
+            <td>${moneda(costo.valor)}</td>
             <td>${escaparHTML(costo.fecha)}</td>
             <td>
                 <button type="button"
@@ -279,7 +277,7 @@ async function cargarCostos() {
             try {
                 await eliminarRegistro(
                     "costos",
-                    boton.dataset.eliminarCosto
+                    boton.dataset.editarCosto || boton.dataset.eliminarCosto
                 );
             } catch (error) {
                 mostrarError(error);
@@ -295,8 +293,8 @@ async function cargarCostos() {
 function editarCosto(costo) {
     establecerValor("costoId", costo.id);
     establecerValor("descripcionCosto", costo.descripcion);
-    establecerValor("categoriaCosto", costo.categoria);
-    establecerValor("montoCosto", costo.monto);
+    establecerValor("categoriaCosto", costo.tipo);
+    establecerValor("montoCosto", costo.valor);
     establecerValor("fechaCosto", costo.fecha);
 
     elemento("formCosto")?.scrollIntoView({
@@ -312,19 +310,19 @@ async function guardarCosto(evento) {
 
     const datos = {
         descripcion: elemento("descripcionCosto").value.trim(),
-        categoria: elemento("categoriaCosto").value,
-        monto: Number(elemento("montoCosto").value),
+        tipo: elemento("categoriaCosto").value,
+        valor: Number(elemento("montoCosto").value),
         fecha: elemento("fechaCosto").value
     };
 
     if (
         !datos.descripcion ||
-        !datos.categoria ||
+        !datos.tipo ||
         !datos.fecha ||
-        !Number.isFinite(datos.monto) ||
-        datos.monto < 0
+        !Number.isFinite(datos.valor) ||
+        datos.valor < 0
     ) {
-        alert("Verifica la descripción, categoría, monto y fecha del costo.");
+        alert("Verifica la descripción, tipo, monto y fecha del costo.");
         return;
     }
 
@@ -406,7 +404,7 @@ async function cargarReporte() {
     }
 
     const total = gastos.reduce(
-        (suma, gasto) => suma + Number(gasto.monto || 0),
+        (suma, gasto) => suma + Number(gasto.valor || 0),
         0
     );
 
@@ -430,7 +428,7 @@ async function cargarReporte() {
         }
 
         grupos[categoria].cantidad++;
-        grupos[categoria].total += Number(gasto.monto || 0);
+        grupos[categoria].total += Number(gasto.valor || 0);
     });
 
     const tabla = elemento("tablaReporteCategorias");
@@ -459,35 +457,19 @@ async function cargarEstadisticas() {
     const gastos = datos.gastos || {};
     const costos = datos.costos || {};
 
-    establecerTexto(
-        "estadisticaTotalGastos",
-        moneda(gastos.total)
-    );
-
+    establecerTexto("estadisticaTotalGastos", moneda(gastos.total));
     establecerTexto(
         "estadisticaCantidadGastos",
         `${Number(gastos.cantidad || 0)} registros`
     );
+    establecerTexto("estadisticaPromedioGastos", moneda(gastos.promedio));
 
-    establecerTexto(
-        "estadisticaPromedioGastos",
-        moneda(gastos.promedio)
-    );
-
-    establecerTexto(
-        "estadisticaTotalCostos",
-        moneda(costos.total)
-    );
-
+    establecerTexto("estadisticaTotalCostos", moneda(costos.total));
     establecerTexto(
         "estadisticaCantidadCostos",
         `${Number(costos.cantidad || 0)} registros`
     );
-
-    establecerTexto(
-        "estadisticaPromedioCostos",
-        moneda(costos.promedio)
-    );
+    establecerTexto("estadisticaPromedioCostos", moneda(costos.promedio));
 
     const tabla = elemento("tablaEstadisticasCategorias");
     if (!tabla) return;
@@ -516,15 +498,8 @@ async function cargarEstadisticas() {
 // ======================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    elemento("formGasto")?.addEventListener(
-        "submit",
-        guardarGasto
-    );
-
-    elemento("formCosto")?.addEventListener(
-        "submit",
-        guardarCosto
-    );
+    elemento("formGasto")?.addEventListener("submit", guardarGasto);
+    elemento("formCosto")?.addEventListener("submit", guardarCosto);
 
     elemento("btnCancelarGasto")?.addEventListener(
         "click",
@@ -536,7 +511,6 @@ document.addEventListener("DOMContentLoaded", () => {
         () => limpiarFormulario("costos")
     );
 
-    // Aplicar filtros de gastos.
     elemento("btnFiltrar")?.addEventListener("click", async () => {
         const desde = elemento("filtroFechaInicio")?.value || "";
         const hasta = elemento("filtroFechaFin")?.value || "";
@@ -553,23 +527,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Limpiar filtros.
-    elemento("btnLimpiarFiltros")?.addEventListener(
-        "click",
-        async () => {
-            establecerValor("filtroFechaInicio", "");
-            establecerValor("filtroFechaFin", "");
-            establecerValor("filtroCategoria", "");
+    elemento("btnLimpiarFiltros")?.addEventListener("click", async () => {
+        establecerValor("filtroFechaInicio", "");
+        establecerValor("filtroFechaFin", "");
+        establecerValor("filtroCategoria", "");
 
-            try {
-                await cargarGastos();
-            } catch (error) {
-                mostrarError(error);
-            }
+        try {
+            await cargarGastos();
+        } catch (error) {
+            mostrarError(error);
         }
-    );
+    });
 
-    // Identificador correcto del botón en gastos.html.
     elemento("btnActualizarEstadisticas")?.addEventListener(
         "click",
         async () => {
@@ -581,7 +550,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     );
 
-    // Cargar información al abrir la página.
     Promise.allSettled([
         cargarGastos(),
         cargarCostos(),
@@ -598,7 +566,3 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 });
-```
-
-
-cargarDatos();
