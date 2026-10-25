@@ -73,47 +73,59 @@
             font-size: 20px;
             margin-bottom: 18px;
         }
-        
-.resumen-financiero {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 18px;
-    margin-bottom: 35px;
-}
 
-.tarjeta-financiera {
-    background: white;
-    border: 1px solid #e1e7ef;
-    border-radius: 12px;
-    padding: 22px;
-    box-shadow: 0 4px 14px #172b4d0a;
-}
+        /* Resumen financiero */
+        .resumen-financiero {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin-bottom: 35px;
+        }
 
-.tarjeta-financiera h3 {
-    font-size: 15px;
-    color: #68768a;
-    margin-bottom: 12px;
-}
+        .tarjeta-financiera {
+            background: white;
+            border: 1px solid #e1e7ef;
+            border-radius: 12px;
+            padding: 22px;
+            box-shadow: 0 4px 14px #172b4d0a;
+        }
 
-.tarjeta-financiera p {
-    font-size: 24px;
-    font-weight: bold;
-    color: #172b4d;
-    overflow-wrap: anywhere;
-}
+        .tarjeta-financiera h3 {
+            font-size: 15px;
+            color: #68768a;
+            margin-bottom: 12px;
+        }
 
-#estado-resumen {
-    color: #68768a;
-    font-size: 13px;
-    margin: -20px 0 20px;
-}
+        .tarjeta-financiera p {
+            font-size: 24px;
+            font-weight: bold;
+            color: #172b4d;
+            overflow-wrap: anywhere;
+        }
 
+        /* Colores del balance */
+        #balance-negocio.balance-positivo {
+            color: #16803c;
+        }
 
+        #balance-negocio.balance-negativo {
+            color: #dc2626;
+        }
+
+        #balance-negocio.balance-cero {
+            color: #68768a;
+        }
+
+        #estado-resumen {
+            color: #68768a;
+            font-size: 13px;
+            margin: -20px 0 20px;
+        }
+
+        /* Módulos */
         .modulos {
             display: grid;
-            grid-template-columns: repeat(
-                auto-fit, minmax(240px, 1fr)
-            );
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 22px;
         }
 
@@ -230,36 +242,36 @@
             </p>
         </section>
 
-<h2 class="titulo-seccion">Resumen financiero</h2>
+        <h2 class="titulo-seccion">Resumen financiero</h2>
 
-<p id="estado-resumen">Cargando información...</p>
+        <p id="estado-resumen">Cargando información...</p>
 
-<section class="resumen-financiero">
-    <article class="tarjeta-financiera">
-        <h3>Total de ventas</h3>
-        <p id="total-ventas">$0</p>
-    </article>
+        <section class="resumen-financiero">
+            <article class="tarjeta-financiera">
+                <h3>Total de ventas</h3>
+                <p id="total-ventas">$0</p>
+            </article>
 
-    <article class="tarjeta-financiera">
-        <h3>Cobros pagados</h3>
-        <p id="total-cobros">$0</p>
-    </article>
+            <article class="tarjeta-financiera">
+                <h3>Cobros pagados</h3>
+                <p id="total-cobros">$0</p>
+            </article>
 
-    <article class="tarjeta-financiera">
-        <h3>Total de gastos</h3>
-        <p id="total-gastos">$0</p>
-    </article>
+            <article class="tarjeta-financiera">
+                <h3>Total de gastos</h3>
+                <p id="total-gastos">$0</p>
+            </article>
 
-    <article class="tarjeta-financiera">
-        <h3>Total de costos</h3>
-        <p id="total-costos">$0</p>
-    </article>
+            <article class="tarjeta-financiera">
+                <h3>Total de costos</h3>
+                <p id="total-costos">$0</p>
+            </article>
 
-    <article class="tarjeta-financiera">
-        <h3>Balance del negocio</h3>
-        <p id="balance-negocio">$0</p>
-    </article>
-</section>
+            <article class="tarjeta-financiera">
+                <h3>Balance operativo estimado</h3>
+                <p id="balance-negocio">$0</p>
+            </article>
+        </section>
 
         <h2 class="titulo-seccion">Módulos del sistema</h2>
 
@@ -290,10 +302,10 @@
 
             <article class="modulo">
                 <div class="icono">📊</div>
-                <h3>Gastos</h3>
+                <h3>Gastos y costos</h3>
                 <p>
-                    Registra y consulta los gastos del negocio
-                    para mantener un mejor control financiero.
+                    Registra y consulta los gastos y costos
+                    del negocio para mantener un mejor control financiero.
                 </p>
                 <a href="http://127.0.0.1:5000/">
                     Ingresar a Gastos →
@@ -305,6 +317,7 @@
             <strong>Recomendación:</strong>
             registra y actualiza la información de cada módulo
             para mantener organizado el control de tu negocio.
+            El balance es una estimación de ventas menos gastos y costos.
         </section>
     </main>
 
@@ -312,53 +325,74 @@
         NEXTREP · Sistema de gestión para pequeños negocios
     </footer>
 
-<script>
-    function formatoPesos(valor) {
-        return Number(valor || 0).toLocaleString("es-CO", {
-            style: "currency",
-            currency: "COP",
-            maximumFractionDigits: 0
-        });
-    }
-
-    async function cargarResumen() {
-        const estado = document.getElementById("estado-resumen");
-
-        try {
-            const respuesta = await fetch(
-                "http://127.0.0.1:5001/api/resumen"
-            );
-
-            if (!respuesta.ok) {
-                throw new Error("No se pudo consultar el resumen");
-            }
-
-            const datos = await respuesta.json();
-
-            document.getElementById("total-ventas").textContent =
-                formatoPesos(datos.ventas);
-
-            document.getElementById("total-cobros").textContent =
-                formatoPesos(datos.cobros_pagados);
-
-            document.getElementById("total-gastos").textContent =
-                formatoPesos(datos.gastos);
-
-            document.getElementById("total-costos").textContent =
-                formatoPesos(datos.costos);
-
-            document.getElementById("balance-negocio").textContent =
-                formatoPesos(datos.balance);
-
-            estado.textContent = "Información actualizada correctamente.";
-        } catch (error) {
-            estado.textContent =
-                "No se pudo cargar el resumen. Verifica que el servidor esté activo.";
-            console.error(error);
+    <script>
+        function formatoPesos(valor) {
+            return Number(valor || 0).toLocaleString("es-CO", {
+                style: "currency",
+                currency: "COP",
+                maximumFractionDigits: 0
+            });
         }
-    }
 
-    cargarResumen();
-</script>
+        async function cargarResumen() {
+            const estado = document.getElementById("estado-resumen");
+
+            try {
+                const respuesta = await fetch(
+                    "http://127.0.0.1:5001/api/resumen"
+                );
+
+                if (!respuesta.ok) {
+                    throw new Error("No se pudo consultar el resumen");
+                }
+
+                const datos = await respuesta.json();
+
+                document.getElementById("total-ventas").textContent =
+                    formatoPesos(datos.ventas);
+
+                document.getElementById("total-cobros").textContent =
+                    formatoPesos(datos.cobros_pagados);
+
+                document.getElementById("total-gastos").textContent =
+                    formatoPesos(datos.gastos);
+
+                document.getElementById("total-costos").textContent =
+                    formatoPesos(datos.costos);
+
+                const balanceElemento =
+                    document.getElementById("balance-negocio");
+
+                const balance = Number(datos.balance || 0);
+
+                balanceElemento.textContent = formatoPesos(balance);
+
+                balanceElemento.classList.remove(
+                    "balance-positivo",
+                    "balance-negativo",
+                    "balance-cero"
+                );
+
+                if (balance > 0) {
+                    balanceElemento.classList.add("balance-positivo");
+                } else if (balance < 0) {
+                    balanceElemento.classList.add("balance-negativo");
+                } else {
+                    balanceElemento.classList.add("balance-cero");
+                }
+
+                estado.textContent =
+                    "Información actualizada correctamente.";
+
+            } catch (error) {
+                estado.textContent =
+                    "No se pudo cargar el resumen. Verifica que el servidor esté activo.";
+
+                console.error(error);
+            }
+        }
+
+        cargarResumen();
+    </script>
 </body>
 </html>
