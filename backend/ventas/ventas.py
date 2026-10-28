@@ -1,12 +1,15 @@
 
+
 from flask import (
     Flask,
     request,
     jsonify,
     send_from_directory,
     send_file,
-    session
+    session,
+    redirect
 )
+from functools import wraps
 import sqlite3
 import os
 import re
@@ -34,7 +37,27 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 RAIZ = Path(__file__).resolve().parents[2]
 FRONTEND = RAIZ / "frontend" / "ventas"
 PANEL = RAIZ / "frontend" / "index.html"
+LOGIN_FRONTEND = RAIZ / "frontend" / "login"
+REGISTRO_FRONTEND = RAIZ / "frontend" / "registro"
+PERFIL_FRONTEND = RAIZ / "frontend" / "perfil"
 BASE_DATOS = RAIZ / "database" / "nextrep_gastos.db"
+
+
+# --------------------------------------------------
+# PROTECCIÓN DE LAS API
+# --------------------------------------------------
+
+def requiere_sesion(funcion):
+    @wraps(funcion)
+    def funcion_protegida(*args, **kwargs):
+        if not session.get("usuario_id"):
+            return jsonify({
+                "error": "Debes iniciar sesión para realizar esta acción."
+            }), 401
+
+        return funcion(*args, **kwargs)
+
+    return funcion_protegida
 
 
 # --------------------------------------------------
@@ -49,8 +72,6 @@ def conectar():
 
 def crear_tabla():
     with conectar() as db:
-
-        # Tabla de ventas
         db.execute("""
             CREATE TABLE IF NOT EXISTS ventas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +95,6 @@ def crear_tabla():
                 "ALTER TABLE ventas ADD COLUMN fecha TEXT"
             )
 
-        # Tabla de usuarios
         db.execute("""
             CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,11 +140,6 @@ def consultar_total(
     columna_valor="valor",
     condicion=None
 ):
-    """
-    Consulta la suma de una columna numérica.
-    Si la tabla o columna no existe, devuelve cero.
-    """
-
     tablas_permitidas = ("gastos", "costos", "cobros")
 
     if tabla not in tablas_permitidas:
@@ -167,11 +182,6 @@ def consultar_total(
 # PÁGINAS DEL FRONTEND
 # --------------------------------------------------
 
-LOGIN_FRONTEND = RAIZ / "frontend" / "login"
-REGISTRO_FRONTEND = RAIZ / "frontend" / "registro"
-PERFIL_FRONTEND = RAIZ / "frontend" / "perfil"
-
-
 @app.route("/login")
 def pagina_login():
     return send_from_directory(LOGIN_FRONTEND, "login.html")
@@ -185,7 +195,7 @@ def pagina_registro():
 @app.route("/perfil")
 def pagina_perfil():
     if not session.get("usuario_id"):
-        return __import__("flask").redirect("/login")
+        return redirect("/login")
 
     return send_from_directory(PERFIL_FRONTEND, "perfil.html")
 
@@ -193,7 +203,7 @@ def pagina_perfil():
 @app.route("/panel")
 def panel_principal():
     if not session.get("usuario_id"):
-        return __import__("flask").redirect("/login")
+        return redirect("/login")
 
     if not PANEL.exists():
         return jsonify({
@@ -205,6 +215,9 @@ def panel_principal():
 
 @app.route("/")
 def inicio():
+    if not session.get("usuario_id"):
+        return redirect("/login")
+
     return send_from_directory(FRONTEND, "ventas.html")
 
 
@@ -217,6 +230,7 @@ def archivos_frontend(archivo):
         "error": "Archivo no encontrado."
     }), 404
 
+
 @app.route("/login/<path:archivo>")
 def archivos_login(archivo):
     if archivo in ("login.css", "login.js"):
@@ -225,20 +239,31 @@ def archivos_login(archivo):
     return jsonify({
         "error": "Archivo no encontrado."
     }), 404
+
+
 @app.route("/registro/<path:archivo>")
 def archivos_registro(archivo):
     if archivo in ("registro.css", "registro.js"):
         return send_from_directory(REGISTRO_FRONTEND, archivo)
 
-    return jsonify({"error": "Archivo no encontrado."
+    return jsonify({
+        "error": "Archivo no encontrado."
     }), 404
+
+
 @app.route("/perfil/<path:archivo>")
 def archivos_perfil(archivo):
     if archivo in ("perfil.css", "perfil.js"):
         return send_from_directory(PERFIL_FRONTEND, archivo)
 
-    return jsonify({"error": "Archivo no encontrado."}), 404
+    return jsonify({
+        "error": "Archivo no encontrado."
+    }), 404
+
+
+# --------------------------------------------------
 # REGISTRO DE USUARIOS
+# --------------------------------------------------
 
 @app.route("/api/registro", methods=["POST"])
 def registrar_usuario():
@@ -347,13 +372,9 @@ def iniciar_sesion():
 # --------------------------------------------------
 
 @app.route("/api/perfil", methods=["GET"])
+@requiere_sesion
 def obtener_perfil():
     usuario_id = session.get("usuario_id")
-
-    if not usuario_id:
-        return jsonify({
-            "error": "Debes iniciar sesión."
-        }), 401
 
     with conectar() as db:
         usuario = db.execute("""
@@ -395,6 +416,7 @@ def cerrar_sesion():
 # --------------------------------------------------
 
 @app.route("/api/ventas", methods=["POST"])
+@requiere_sesion
 def registrar_venta():
     datos = request.get_json(silent=True) or {}
 
@@ -403,7 +425,7 @@ def registrar_venta():
     try:
         cantidad = int(datos.get("cantidad", 0))
         precio = float(datos.get("precio", 0))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return jsonify({
             "error": "La cantidad y el precio deben ser números válidos."
         }), 400
@@ -449,6 +471,7 @@ def registrar_venta():
 # --------------------------------------------------
 
 @app.route("/api/ventas", methods=["GET"])
+@requiere_sesion
 def listar_ventas():
     with conectar() as db:
         ventas = db.execute("""
@@ -475,6 +498,7 @@ def listar_ventas():
 # --------------------------------------------------
 
 @app.route("/api/ventas/historial", methods=["GET"])
+@requiere_sesion
 def historial_ventas():
     desde = request.args.get("desde")
     hasta = request.args.get("hasta")
@@ -521,6 +545,7 @@ def historial_ventas():
 # --------------------------------------------------
 
 @app.route("/api/ventas/total", methods=["GET"])
+@requiere_sesion
 def total_ventas():
     with conectar() as db:
         resultado = db.execute("""
@@ -538,6 +563,7 @@ def total_ventas():
 # --------------------------------------------------
 
 @app.route("/api/ventas/<int:venta_id>", methods=["PUT"])
+@requiere_sesion
 def editar_venta(venta_id):
     datos = request.get_json(silent=True) or {}
 
@@ -546,7 +572,7 @@ def editar_venta(venta_id):
     try:
         cantidad = int(datos.get("cantidad", 0))
         precio = float(datos.get("precio", 0))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return jsonify({
             "error": "La cantidad y el precio deben ser números válidos."
         }), 400
@@ -598,6 +624,7 @@ def editar_venta(venta_id):
 # --------------------------------------------------
 
 @app.route("/api/ventas/<int:venta_id>", methods=["DELETE"])
+@requiere_sesion
 def eliminar_venta(venta_id):
     with conectar() as db:
         cursor = db.execute(
@@ -620,6 +647,7 @@ def eliminar_venta(venta_id):
 # --------------------------------------------------
 
 @app.route("/api/resumen", methods=["GET"])
+@requiere_sesion
 def resumen_financiero():
     with conectar() as db:
         total_ventas = db.execute("""
@@ -627,7 +655,6 @@ def resumen_financiero():
             FROM ventas
         """).fetchone()[0] or 0
 
-    # Solo sumar cobros pagados si existen las columnas.
     columnas_cobros = obtener_columnas("cobros")
 
     if (
@@ -667,6 +694,7 @@ def resumen_financiero():
 # --------------------------------------------------
 
 @app.route("/api/analisis-inteligente", methods=["GET"])
+@requiere_sesion
 def analisis_inteligente():
     with conectar() as db:
         ventas = db.execute("""
