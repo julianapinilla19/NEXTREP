@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -11,388 +12,375 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: Arial, sans-serif;
         }
 
         body {
-            font-family: Arial, sans-serif;
             background: #f4f6f9;
-            color: #263449;
+            color: #222;
         }
 
         header {
-            background: #172b4d;
+            background: #172554;
             color: white;
-            padding: 22px 7%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
+            padding: 25px 20px;
+            text-align: center;
         }
 
-        .logo {
-            font-size: 27px;
-            font-weight: bold;
-            letter-spacing: 1px;
+        header h1 {
+            margin-bottom: 8px;
         }
 
         header p {
-            font-size: 14px;
-            color: #dbe5f5;
-            margin-top: 5px;
-        }
-
-        .estado {
-            background: #24416d;
-            padding: 9px 14px;
-            border-radius: 20px;
-            font-size: 13px;
+            color: #dbeafe;
         }
 
         main {
             max-width: 1100px;
-            margin: 42px auto;
-            padding: 0 24px;
+            margin: 30px auto;
+            padding: 0 20px;
         }
 
-        .bienvenida {
-            margin-bottom: 30px;
+        h2 {
+            margin-bottom: 20px;
+            color: #172554;
         }
 
-        .bienvenida h1 {
-            font-size: 30px;
-            margin-bottom: 10px;
-        }
-
-        .bienvenida p {
-            color: #66758a;
-            line-height: 1.6;
-        }
-
-        .titulo-seccion {
-            font-size: 20px;
-            margin-bottom: 18px;
-        }
-
-        /* Resumen financiero */
-        .resumen-financiero {
+        .modulos {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
             margin-bottom: 35px;
         }
 
-        .tarjeta-financiera {
-            background: white;
-            border: 1px solid #e1e7ef;
-            border-radius: 12px;
-            padding: 22px;
-            box-shadow: 0 4px 14px #172b4d0a;
-        }
-
-        .tarjeta-financiera h3 {
-            font-size: 15px;
-            color: #68768a;
-            margin-bottom: 12px;
-        }
-
-        .tarjeta-financiera p {
-            font-size: 24px;
-            font-weight: bold;
-            color: #172b4d;
-            overflow-wrap: anywhere;
-        }
-
-        /* Colores del balance */
-        #balance-negocio.balance-positivo {
-            color: #16803c;
-        }
-
-        #balance-negocio.balance-negativo {
-            color: #dc2626;
-        }
-
-        #balance-negocio.balance-cero {
-            color: #68768a;
-        }
-
-        #estado-resumen {
-            color: #68768a;
-            font-size: 13px;
-            margin: -20px 0 20px;
-        }
-
-        /* Módulos */
-        .modulos {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 22px;
-        }
-
         .modulo {
+            display: block;
             background: white;
-            border: 1px solid #e1e7ef;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 14px #172b4d0a;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #172554;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s;
         }
 
         .modulo:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 22px #172b4d16;
-        }
-
-        .icono {
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #eaf0fb;
-            border-radius: 10px;
-            font-size: 25px;
-            margin-bottom: 19px;
+            transform: translateY(-3px);
+            background: #eff6ff;
         }
 
         .modulo h3 {
-            font-size: 21px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .modulo p {
-            color: #68768a;
             font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 22px;
-            flex-grow: 1;
+            color: #64748b;
         }
 
-        .modulo a {
-            display: inline-block;
-            text-decoration: none;
-            color: white;
-            background: #2457a7;
-            padding: 12px 17px;
-            border-radius: 7px;
-            font-size: 14px;
-            font-weight: bold;
-            transition: background 0.2s;
+        .resumen {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
         }
 
-        .modulo a:hover {
-            background: #173d79;
-        }
-
-        .nota {
-            margin-top: 30px;
-            padding: 18px 20px;
-            background: #eaf0fb;
+        .tarjeta {
+            background: white;
+            padding: 22px;
             border-radius: 10px;
-            color: #314968;
-            font-size: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+        }
+
+        .tarjeta h3 {
+            color: #64748b;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .valor {
+            font-size: 25px;
+            font-weight: bold;
+            color: #172554;
+            overflow-wrap: anywhere;
+        }
+
+        .balance {
+            color: #15803d;
+        }
+
+        .negativo {
+            color: #b91c1c;
+        }
+
+        .analisis {
+            margin-top: 30px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 24px;
+        }
+
+        .analisis h2 {
+            margin-bottom: 15px;
+        }
+
+        #estado-analisis {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        #recomendacion {
             line-height: 1.6;
+            color: #475569;
+        }
+
+        .mensaje {
+            margin-top: 15px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .boton-actualizar {
+            margin-top: 18px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #2457b2;
+            color: white;
+            cursor: pointer;
+        }
+
+        .boton-actualizar:hover {
+            background: #1d4388;
         }
 
         footer {
-            margin-top: 55px;
-            padding: 23px;
             text-align: center;
-            color: #778397;
+            padding: 25px;
+            color: #64748b;
             font-size: 13px;
-            border-top: 1px solid #e1e7ef;
-        }
-
-        @media (max-width: 600px) {
-            header {
-                padding: 20px;
-            }
-
-            main {
-                margin-top: 30px;
-                padding: 0 17px;
-            }
-
-            .bienvenida h1 {
-                font-size: 25px;
-            }
         }
     </style>
 </head>
 
 <body>
     <header>
-        <div>
-            <div class="logo">NEXTREP</div>
-            <p>Gestión inteligente de negocios</p>
-        </div>
-
-        <div class="estado">Panel de administración</div>
+        <h1>NEXTREP</h1>
+        <p>Gestor Inteligente de Negocios</p>
     </header>
 
     <main>
-        <section class="bienvenida">
-            <h1>Bienvenido a NEXTREP</h1>
-            <p>
-                Administra la información de tu negocio desde un solo lugar.
-                Selecciona el módulo que deseas utilizar.
+        <section>
+            <h2>Panel principal</h2>
+
+            <div class="modulos">
+                <a class="modulo" href="http://127.0.0.1:5001/">
+                    <h3>Ventas</h3>
+                    <p>Registra y administra tus ventas.</p>
+                </a>
+
+                <a class="modulo" href="http://127.0.0.1:5002/">
+                    <h3>Cobros</h3>
+                    <p>Consulta y administra los cobros.</p>
+                </a>
+
+                <a class="modulo" href="http://127.0.0.1:5000/">
+                    <h3>Gastos y costos</h3>
+                    <p>Controla los egresos del negocio.</p>
+                </a>
+            </div>
+        </section>
+
+        <section>
+            <h2>Resumen financiero</h2>
+
+            <div class="resumen">
+                <div class="tarjeta">
+                    <h3>Total de ventas</h3>
+                    <p class="valor" id="total-ventas">$ 0</p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Cobros pagados</h3>
+                    <p class="valor" id="total-cobros">$ 0</p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Total de gastos</h3>
+                    <p class="valor" id="total-gastos">$ 0</p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Total de costos</h3>
+                    <p class="valor" id="total-costos">$ 0</p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Balance del negocio</h3>
+                    <p class="valor balance" id="balance-negocio">$ 0</p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Rentabilidad</h3>
+                    <p class="valor" id="rentabilidad">0%</p>
+                </div>
+            </div>
+
+            <p class="mensaje" id="mensaje-resumen" role="status">
+                Cargando información financiera...
             </p>
+
+            <button
+                type="button"
+                class="boton-actualizar"
+                onclick="cargarPanel()"
+            >
+                Actualizar información
+            </button>
         </section>
 
-        <h2 class="titulo-seccion">Resumen financiero</h2>
+        <section class="analisis">
+            <h2>Análisis inteligente del negocio</h2>
 
-        <p id="estado-resumen">Cargando información...</p>
+            <p id="estado-analisis" role="status">
+                Consultando información...
+            </p>
 
-        <section class="resumen-financiero">
-            <article class="tarjeta-financiera">
-                <h3>Total de ventas</h3>
-                <p id="total-ventas">$0</p>
-            </article>
+            <p id="recomendacion">
+                Estamos analizando las ventas, los gastos y los costos.
+            </p>
 
-            <article class="tarjeta-financiera">
-                <h3>Cobros pagados</h3>
-                <p id="total-cobros">$0</p>
-            </article>
-
-            <article class="tarjeta-financiera">
-                <h3>Total de gastos</h3>
-                <p id="total-gastos">$0</p>
-            </article>
-
-            <article class="tarjeta-financiera">
-                <h3>Total de costos</h3>
-                <p id="total-costos">$0</p>
-            </article>
-
-            <article class="tarjeta-financiera">
-                <h3>Balance operativo estimado</h3>
-                <p id="balance-negocio">$0</p>
-            </article>
-        </section>
-
-        <h2 class="titulo-seccion">Módulos del sistema</h2>
-
-        <section class="modulos">
-            <article class="modulo">
-                <div class="icono">🛒</div>
-                <h3>Ventas</h3>
-                <p>
-                    Registra productos, administra las ventas,
-                    consulta el historial y revisa los totales.
-                </p>
-                <a href="http://127.0.0.1:5001/">
-                    Ingresar a Ventas →
-                </a>
-            </article>
-
-            <article class="modulo">
-                <div class="icono">💳</div>
-                <h3>Cobros</h3>
-                <p>
-                    Controla los cobros de tus clientes,
-                    sus valores y el estado de cada pago.
-                </p>
-                <a href="http://127.0.0.1:5002/">
-                    Ingresar a Cobros →
-                </a>
-            </article>
-
-            <article class="modulo">
-                <div class="icono">📊</div>
-                <h3>Gastos y costos</h3>
-                <p>
-                    Registra y consulta los gastos y costos
-                    del negocio para mantener un mejor control financiero.
-                </p>
-                <a href="http://127.0.0.1:5000/">
-                    Ingresar a Gastos →
-                </a>
-            </article>
-        </section>
-
-        <section class="nota">
-            <strong>Recomendación:</strong>
-            registra y actualiza la información de cada módulo
-            para mantener organizado el control de tu negocio.
-            El balance es una estimación de ventas menos gastos y costos.
+            <p class="mensaje" id="mensaje-analisis"></p>
         </section>
     </main>
 
     <footer>
-        NEXTREP · Sistema de gestión para pequeños negocios
+        NEXTREP - Gestor Inteligente de Negocios
     </footer>
 
     <script>
-        function formatoPesos(valor) {
-            return Number(valor || 0).toLocaleString("es-CO", {
+        const API = "http://127.0.0.1:5001";
+
+        function formatoMoneda(valor) {
+            const numero = Number(valor);
+
+            return new Intl.NumberFormat("es-CO", {
                 style: "currency",
                 currency: "COP",
                 maximumFractionDigits: 0
+            }).format(Number.isFinite(numero) ? numero : 0);
+        }
+
+        async function consultarAPI(ruta) {
+            const respuesta = await fetch(`${API}${ruta}`, {
+                cache: "no-store"
             });
+
+            if (!respuesta.ok) {
+                throw new Error(`Error al consultar ${ruta}: ${respuesta.status}`);
+            }
+
+            return await respuesta.json();
         }
 
         async function cargarResumen() {
-            const estado = document.getElementById("estado-resumen");
+            const mensaje = document.getElementById("mensaje-resumen");
 
             try {
-                const respuesta = await fetch(
-                    "http://127.0.0.1:5001/api/resumen"
-                );
-
-                if (!respuesta.ok) {
-                    throw new Error("No se pudo consultar el resumen");
-                }
-
-                const datos = await respuesta.json();
+                const datos = await consultarAPI("/api/resumen");
 
                 document.getElementById("total-ventas").textContent =
-                    formatoPesos(datos.ventas);
+                    formatoMoneda(datos.ventas);
 
                 document.getElementById("total-cobros").textContent =
-                    formatoPesos(datos.cobros_pagados);
+                    formatoMoneda(datos.cobros_pagados);
 
                 document.getElementById("total-gastos").textContent =
-                    formatoPesos(datos.gastos);
+                    formatoMoneda(datos.gastos);
 
                 document.getElementById("total-costos").textContent =
-                    formatoPesos(datos.costos);
+                    formatoMoneda(datos.costos);
 
-                const balanceElemento =
+                const balance = Number(datos.balance);
+                const balanceValido = Number.isFinite(balance) ? balance : 0;
+
+                const elementoBalance =
                     document.getElementById("balance-negocio");
 
-                const balance = Number(datos.balance || 0);
-
-                balanceElemento.textContent = formatoPesos(balance);
-
-                balanceElemento.classList.remove(
-                    "balance-positivo",
-                    "balance-negativo",
-                    "balance-cero"
+                elementoBalance.textContent = formatoMoneda(balanceValido);
+                elementoBalance.classList.toggle(
+                    "negativo",
+                    balanceValido < 0
+                );
+                elementoBalance.classList.toggle(
+                    "balance",
+                    balanceValido >= 0
                 );
 
-                if (balance > 0) {
-                    balanceElemento.classList.add("balance-positivo");
-                } else if (balance < 0) {
-                    balanceElemento.classList.add("balance-negativo");
-                } else {
-                    balanceElemento.classList.add("balance-cero");
-                }
+                const rentabilidad = Number(datos.rentabilidad);
 
-                estado.textContent =
-                    "Información actualizada correctamente.";
+                document.getElementById("rentabilidad").textContent =
+                    `${(Number.isFinite(rentabilidad) ? rentabilidad : 0)
+                        .toLocaleString("es-CO", {
+                            maximumFractionDigits: 2
+                        })}%`;
+
+                mensaje.textContent =
+                    "Resumen financiero actualizado correctamente.";
 
             } catch (error) {
-                estado.textContent =
-                    "No se pudo cargar el resumen. Verifica que el servidor esté activo.";
+                mensaje.textContent =
+                    "No se pudo cargar el resumen. Verifica que el servidor de ventas esté activo.";
 
-                console.error(error);
+                console.error("Error al cargar el resumen:", error);
             }
         }
 
-        cargarResumen();
+        async function cargarAnalisis() {
+            const estado = document.getElementById("estado-analisis");
+            const recomendacion = document.getElementById("recomendacion");
+            const mensaje = document.getElementById("mensaje-analisis");
+
+            try {
+                const datos = await consultarAPI("/api/analisis-inteligente");
+
+                estado.textContent = datos.estado || "Análisis disponible";
+
+                recomendacion.textContent =
+                    datos.recomendacion ||
+                    "No hay recomendaciones disponibles en este momento.";
+
+                const rentabilidad = Number(datos.rentabilidad);
+
+                mensaje.textContent = Number.isFinite(rentabilidad)
+                    ? `Rentabilidad estimada: ${rentabilidad.toLocaleString(
+                        "es-CO",
+                        { maximumFractionDigits: 2 }
+                    )}%`
+                    : "";
+
+            } catch (error) {
+                estado.textContent = "Análisis no disponible";
+
+                recomendacion.textContent =
+                    "Verifica que el servidor de ventas esté activo e inténtalo nuevamente.";
+
+                mensaje.textContent = "";
+
+                console.error("Error al cargar el análisis:", error);
+            }
+        }
+
+        async function cargarPanel() {
+            await Promise.all([
+                cargarResumen(),
+                cargarAnalisis()
+            ]);
+        }
+
+        document.addEventListener("DOMContentLoaded", cargarPanel);
     </script>
 </body>
 </html>

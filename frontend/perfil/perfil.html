@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi perfil | NEXTREP</title>
+    <link rel="stylesheet" href="/perfil/perfil.css">
+</head>
+<body>
+    <header class="encabezado">
+        <h1>NEXTREP</h1>
+        <a href="/panel" class="enlace-panel">Volver al panel</a>
+    </header>
+
+    <main class="contenedor">
+        <section class="tarjeta">
+            <div class="avatar" id="avatar">U</div>
+
+            <h2>Mi perfil</h2>
+            <p class="subtitulo">Información de tu cuenta</p>
+
+            <div class="dato">
+                <span class="etiqueta">Nombre completo</span>
+                <p id="nombre">Cargando...</p>
+            </div>
+
+            <div class="dato">
+                <span class="etiqueta">Correo electrónico</span>
+                <p id="correo">Cargando...</p>
+            </div>
+
+            <p id="mensaje" role="alert"></p>
+
+            <button type="button" id="boton-cerrar">
+                Cerrar sesión
+            </button>
+        </section>
+    </main>
+
+    <script src="/perfil/perfil.js"></script>
+</body>
+</html>

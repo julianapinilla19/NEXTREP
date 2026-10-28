@@ -163,6 +163,7 @@ async function eliminarVenta(id) {
 }
 
 // Consultar el historial por fechas
+
 async function consultarHistorial() {
     const desde = document.getElementById("fechaDesde").value;
     const hasta = document.getElementById("fechaHasta").value;
@@ -178,41 +179,47 @@ async function consultarHistorial() {
     if (hasta) parametros.set("hasta", hasta);
 
     const sufijo = parametros.toString();
-    const urlHistorial = sufijo
+    const url = sufijo
         ? `${API_HISTORIAL}?${sufijo}`
         : API_HISTORIAL;
 
     try {
-        const respuesta = await fetch(urlHistorial);
+        const respuesta = await fetch(url, { cache: "no-store" });
 
         if (!respuesta.ok) {
-            throw new Error("No se pudo consultar el historial");
+            throw new Error("No se pudo consultar el historial.");
         }
 
         const ventas = await respuesta.json();
 
-        // Mostrar el historial en la tabla
-        await cargarVentasDesdeLista(ventas);
-
-        // Consultar el total del mismo período
-        const urlTotal = sufijo
-            ? `${API_TOTAL}?${sufijo}`
-            : API_TOTAL;
-
-        const respuestaTotal = await fetch(urlTotal);
-
-        if (!respuestaTotal.ok) {
-            throw new Error("No se pudo consultar el total");
+        if (!Array.isArray(ventas)) {
+            throw new Error("El historial recibido no es una lista.");
         }
 
-        const resultadoTotal = await respuestaTotal.json();
+        cargarVentasDesdeLista(ventas);
+
+        const total = ventas.reduce((suma, venta) => {
+            const valor = Number(venta.total);
+            const cantidad = Number(venta.cantidad);
+            const precio = Number(venta.precio);
+
+            if (Number.isFinite(valor)) {
+                return suma + valor;
+            }
+
+            if (Number.isFinite(cantidad) && Number.isFinite(precio)) {
+                return suma + cantidad * precio;
+            }
+
+            return suma;
+        }, 0);
 
         document.getElementById("totalVentas").textContent =
-            formatoCOP(resultadoTotal.total_ventas);
+            formatoCOP(total);
 
     } catch (error) {
-        console.error(error);
-        alert("No se pudo consultar el historial o el total de ventas.");
+        console.error("Error en el historial:", error);
+        alert("No se pudo consultar el historial de ventas.");
     }
 }
 
