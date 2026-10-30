@@ -10,12 +10,12 @@ body {
 }
 
 .encabezado {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 18px 7%;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: #172554;
+    color: white;
+    padding: 25px 20px;
+    text-align: center;
+    display: block;
+
 }
 
 .encabezado h1 {
@@ -117,4 +117,78 @@ button:disabled {
     color: #b42318;
     font-size: 14px;
     min-height: 18px;
+}
+
+    
+.menu {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1000;
+}
+
+.menu-btn {
+    width: 50px;
+    height: 50px;
+    border: none;
+    background: #173b70;
+    color: white;
+    font-size: 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0,0,0,.2);
+}
+
+.menu-content {
+    display: none;
+    position: absolute;
+    top: 55px;
+    left: 0;
+    background: white;
+    min-width: 220px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.2);
+    overflow: hidden;
+}
+
+.menu-content a {
+    display: block;
+    padding: 12px 15px;
+    text-decoration: none;
+    color: #173b70;
+    font-weight: bold;
+}
+
+.menu-content a:hover {
+    background: #f2f4f8;
+}
+
+.menu:hover .menu-content {
+    display: block;
+}
+.encabezado {
+    background: #172554;
+    color: white;
+    padding: 25px 20px;
+    text-align: center;
+}
+
+.encabezado h1 {
+    margin: 0 0 8px 0;
+    color: white;
+    font-size: 32px;
+}
+
+.encabezado p {
+    color: #dbeafe;
+    font-size: 14px;
+    margin: 0;
+}
+.titulo-pagina {
+    color: #172554;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 30px auto;
+    padding: 0 20px;
+    text-align: center;
 }

@@ -193,3 +193,94 @@ td button:last-child {
         font-size: 12px;
     }
 }
+.menu {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.menu-btn {
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 10px;
+    background: #6d28d9;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.menu-content {
+    display: none;
+    position: absolute;
+    top: 55px;
+    left: 0;
+    background: white;
+    min-width: 240px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+
+.menu-content a {
+    display: block;
+    color: #172554;
+    text-decoration: none;
+    padding: 14px 18px;
+    font-weight: 500;
+}
+
+.menu-content a:hover {
+    background: #f1f5f9;
+}
+
+/* Al pasar el mouse se despliega */
+.menu:hover .menu-content {
+    display: block;
+}
+
+header {
+    background: #2d0b75;
+    color: white;
+    text-align: center;
+    padding: 25px 20px;
+}
+
+header h1 {
+    margin-bottom: 8px;
+    color: white;
+    font-size: 48px;
+}
+
+header p {
+    color: #dbeafe;
+    margin: 0;
+}
+.encabezado {
+    background: #172554;
+    color: white;
+    padding: 25px 20px;
+    text-align: center;
+}
+
+.encabezado h1 {
+    margin-bottom: 8px;
+    color: white;
+    font-size: 32px;
+}
+
+.encabezado p {
+    color: #dbeafe;
+    font-size: 14px;
+    margin: 0;
+}
+
+.titulo-pagina {
+    color: #172554;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 30px auto;
+    padding: 0 20px;
+}

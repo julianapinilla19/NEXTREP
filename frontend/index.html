@@ -162,10 +162,71 @@
             color: #64748b;
             font-size: 13px;
         }
+        /* ===== MENU DESPLEGABLE ===== */
+
+.menu {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 9999;
+}
+
+.menu-btn {
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 12px;
+    background: #6d28d9;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.menu-content {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    background: white;
+    min-width: 240px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.menu-content a {
+    display: block;
+    padding: 14px 18px;
+    text-decoration: none;
+    color: #172554;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.menu-content a:hover {
+    background: #eef2ff;
+}
+
+.menu:hover .menu-content {
+    display: block;
+}
     </style>
 </head>
 
 <body>
+<div class="menu">
+    <button class="menu-btn">☰</button>
+
+    <div class="menu-content">
+        <a href="http://127.0.0.1:5001/panel">🏠 Menú principal</a>
+        <a href="http://127.0.0.1:5001/">📊 Ventas</a>
+        <a href="http://127.0.0.1:5002/">💰 Cobros</a>
+        <a href="http://127.0.0.1:5000/">📉 Gastos y Costos</a>
+        <a href="http://127.0.0.1:5001/perfil">👤 Perfil</a>
+        <a href="http://127.0.0.1:5001/login">🚪 Cerrar sesión</a>
+    </div>
+</div>
     <header>
         <h1>NEXTREP</h1>
         <p>Gestor Inteligente de Negocios</p>
